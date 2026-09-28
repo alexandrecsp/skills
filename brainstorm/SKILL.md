@@ -1,12 +1,12 @@
 ---
 name: brainstorm
-description: Thinking partner for any topic — interviews you with a frontier-tree loop, dispatching subagents to fact-find when needed. If the topic converges into a feature-shaped scope, continues into the spec-driven path (feature slug + glossary/ADR entries) as phase 1 of `plan`/`implement`; otherwise ends purely conversational, nothing written to disk. Only invoke when the user explicitly runs /brainstorm.
+description: Thinking partner for any topic — interviews you with a frontier-tree loop, dispatching subagents to fact-find when needed. If the topic converges into a feature-shaped scope, continues into the spec-driven path (feature slug + glossary/ADR entries) as phase 1 of `spec`/`implement`; otherwise ends purely conversational, nothing written to disk. Only invoke when the user explicitly runs /brainstorm.
 disable-model-invocation: true
 ---
 
 # Brainstorm
 
-A general-purpose interview loop for thinking through anything — an idea, a decision, an architecture question, a feature to build. Doubles as phase 1 of the spec-driven workflow (`brainstorm` → `plan` → `implement`) exactly when the topic turns out to be a feature; stays purely conversational otherwise.
+A general-purpose interview loop for thinking through anything — an idea, a decision, an architecture question, a feature to build. Doubles as phase 1 of the spec-driven workflow (`brainstorm` → `spec` → `implement`) exactly when the topic turns out to be a feature; stays purely conversational otherwise.
 
 ## The loop
 
@@ -33,7 +33,7 @@ Once the frontier is empty, ask the user directly which path this was: **a featu
 
 **Feature to build:**
 
-1. **Propose a feature slug** (kebab-case, short) for the scope just discussed. Confirm it with the user — this slug is what `plan` and `implement` will look for.
+1. **Propose a feature slug** (kebab-case, short) for the scope just discussed. Confirm it with the user — this slug is what `spec` and `implement` will look for.
 2. **Propose glossary/decision entries**, if any surfaced during the interview:
    - A **term** worth recording: a name that's ambiguous, contested, or load-bearing enough that the codebase should agree on one meaning.
    - A **decision** worth recording: a hard-to-reverse or surprising choice with a real trade-off — not every choice, just ones someone will later ask "why did we do it this way?" about.
@@ -43,6 +43,6 @@ Once the frontier is empty, ask the user directly which path this was: **a featu
    - `docs/ADRS.md` — one growing, append-only file at the project root. Each entry is a `### <date> — <title>` section: context, decision, consequences. Create the file only on first real entry.
    - Append new entries; never rewrite or reorder existing ones.
 
-Do not proceed to writing `spec.md`/`design.md` — that's `plan`'s job. This skill's output is the confirmed slug plus whatever docs entries were written.
+Do not proceed to writing `spec.md`/`design.md` — that's `spec`'s job. This skill's output is the confirmed slug plus whatever docs entries were written.
 
 **Purely exploratory:** summarize the shared understanding reached. No slug, no docs, no artifact. Nothing gets written to disk.

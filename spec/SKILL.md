@@ -1,12 +1,12 @@
 ---
-name: plan
-description: Plan phase of the spec-driven workflow. Writes a feature's spec.md (what/why, Given/When/Then) and design.md (how, step checklist) into .scratch/<feature>/. Only invoke when the user explicitly runs /plan.
+name: spec
+description: Plan phase of the spec-driven workflow. Writes a feature's spec.md (what/why, Given/When/Then) and design.md (how, step checklist) into .scratch/<feature>/. Only invoke when the user explicitly runs /spec.
 disable-model-invocation: true
 ---
 
-# Plan
+# Spec
 
-Phase 2 of the spec-driven workflow (`brainstorm` → `plan` → `implement`). Turns a converged feature scope into two frozen-enough artifacts that `implement` can execute against.
+Phase 2 of the spec-driven workflow (`brainstorm` → `spec` → `implement`). Turns a converged feature scope into two frozen-enough artifacts that `implement` can execute against.
 
 ## Resolving the feature
 

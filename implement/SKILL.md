@@ -6,11 +6,11 @@ disable-model-invocation: true
 
 # Implement
 
-Phase 3 of the spec-driven workflow (`brainstorm` → `plan` → `implement`). Executes a feature's `design.md` checklist, one step at a time or in dependency-ordered parallel waves, then reviews the whole feature once before calling it done.
+Phase 3 of the spec-driven workflow (`brainstorm` → `spec` → `implement`). Executes a feature's `design.md` checklist, one step at a time or in dependency-ordered parallel waves, then reviews the whole feature once before calling it done.
 
 ## The one hard gate
 
-Take the feature slug as an argument, or use the most recently modified `.scratch/` directory if none is given. **If `.scratch/<feature>/design.md` doesn't exist, refuse and point the user at `/plan`.** Every other phase degrades gracefully; this one doesn't — no code without a written plan.
+Take the feature slug as an argument, or use the most recently modified `.scratch/` directory if none is given. **If `.scratch/<feature>/design.md` doesn't exist, refuse and point the user at `/spec`.** Every other phase degrades gracefully; this one doesn't — no code without a written plan.
 
 Read `spec.md` and `design.md` in full before doing anything.
 
@@ -67,7 +67,7 @@ Once every step in `design.md` is checked (or the run ends with some quarantined
    - **Spec axis** — does the merged diff, taken as a whole, actually satisfy every scenario in `spec.md` — not just the scenario each step claimed, but the feature end to end.
    - **Quality axis** — is the diff clean across the whole feature (bugs, obvious simplification/reuse misses, inconsistencies introduced by different steps landing independently).
 2. On any findings: apply one auto-fix, then one re-review (both axes again). Anything still unresolved after that gets surfaced to the user — don't loop further.
-3. This is the only review gate in this skill — there's no per-step equivalent. It trades early, cheap detection (catching a step-4-sized problem before ten more steps build on it) for running the review exactly once per feature instead of once per step. If that trade-off stops paying off on a given feature (a step's `design.md` entry defines a shared contract you're not confident about), that's a signal to strengthen the contract in `plan`'s `## Contracts` section next time, not to silently add a review back in here.
+3. This is the only review gate in this skill — there's no per-step equivalent. It trades early, cheap detection (catching a step-4-sized problem before ten more steps build on it) for running the review exactly once per feature instead of once per step. If that trade-off stops paying off on a given feature (a step's `design.md` entry defines a shared contract you're not confident about), that's a signal to strengthen the contract in `spec`'s `## Contracts` section next time, not to silently add a review back in here.
 
 ## Progress and resumability
 

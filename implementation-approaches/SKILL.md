@@ -1,6 +1,6 @@
 ---
 name: implementation-approaches
-description: Index of house implementation approaches (frontend UI, API/interface design, hexagonal architecture, Unity). Use when writing a feature's design.md Approach section during /plan, or when implementing a step from design.md during /implement, and you need to know which house approach applies.
+description: Index of house implementation approaches (frontend UI, API/interface design, hexagonal architecture, Unity). Use when writing a feature's design.md Approach section during /spec, or when implementing a step from design.md during /implement, and you need to know which house approach applies.
 ---
 
 # Implementation Approaches
