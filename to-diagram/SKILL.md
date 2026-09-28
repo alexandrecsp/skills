@@ -13,10 +13,10 @@ A diagram with invented class, system, or component names is worse than no diagr
 
 | Type | Use when | Template |
 |---|---|---|
-| Sequence | Showing interactions/calls between distinct participants over time, across boundaries | `sequence.md` |
-| C4 | Showing system architecture at context, container, or component level | `c4.md` |
-| Flowchart | Showing decision logic or a process/pipeline, no distinct actors messaging each other | `flowchart.md` |
-| Roadmap | Showing a timeline, phases, or planned milestones | `roadmap.md` |
+| Sequence | Showing interactions/calls between distinct participants over time, across boundaries | [references/sequence.md](./references/sequence.md) |
+| C4 | Showing system architecture at context, container, or component level | [references/c4.md](./references/c4.md) |
+| Flowchart | Showing decision logic or a process/pipeline, no distinct actors messaging each other | [references/flowchart.md](./references/flowchart.md) |
+| Roadmap | Showing a timeline, phases, or planned milestones | [references/roadmap.md](./references/roadmap.md) |
 
 Infer the type from what's being described (an interaction between things → sequence; "what does this system look like" → C4; "what path does this decision take" → flowchart; "what's coming and when" → roadmap). If the request genuinely fits more than one, or names none of these directly, ask rather than guessing.
 

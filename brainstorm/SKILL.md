@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-description: Thinking partner for any topic — interviews you with a frontier-tree loop, dispatching subagents to fact-find when needed. If the topic converges into a feature-shaped scope, continues into the spec-driven path (feature slug + glossary/ADR entries) as phase 1 of `spec`/`implement`; otherwise ends purely conversational, nothing written to disk. Only invoke when the user explicitly runs /brainstorm.
+description: Thinking partner for any topic — interviews you with a frontier-tree loop, dispatching subagents to fact-find when needed. If the topic converges into a feature-shaped scope, continues into the spec-driven path (feature slug + glossary/ADR entries captured inline via `domain-modeling`) as phase 1 of `spec`/`implement`; otherwise ends purely conversational, nothing written to disk. Only invoke when the user explicitly runs /brainstorm.
 disable-model-invocation: true
 ---
 
@@ -33,6 +33,10 @@ Model the conversation as a **design tree**: every open question branches into t
 
 Keep rounds proportional to the topic. A small topic might converge in one round; don't manufacture questions to fill a ceremony.
 
+## Capturing terms and decisions as they happen
+
+Don't wait for the session to end. The moment a round settles a term that's ambiguous/contested/load-bearing, or lands on a choice that's hard to reverse, surprising, and the result of a real trade-off, invoke the `domain-modeling` skill right there, mid-round, handing it what just resolved. It challenges/sharpens, confirms with the user, and writes `docs/GLOSSARY.md` / `docs/adr/NNNN-*.md` immediately — don't collect candidates to propose in a batch later. Most rounds won't produce anything that qualifies; that's fine, `domain-modeling` is the one deciding whether a given decision clears the ADR bar, not this loop.
+
 ## Ending the session
 
 Once the frontier is empty, ask the user directly which path this was: **a feature to build**, or **purely exploratory**. This is the user's call, not a judgment call to infer — the two paths commit to different amounts of disk state, and guessing wrong either writes unwanted docs or silently drops a feature scope the user meant to capture. Default your own recommendation to exploratory when the topic's shape is genuinely ambiguous — the lower-commitment path is the safer wrong guess.
@@ -40,15 +44,8 @@ Once the frontier is empty, ask the user directly which path this was: **a featu
 **Feature to build:**
 
 1. **Propose a feature slug** (kebab-case, short) for the scope just discussed. Confirm it with the user — this slug is what `spec` and `implement` will look for.
-2. **Propose glossary/decision entries**, if any surfaced during the interview:
-   - A **term** worth recording: a name that's ambiguous, contested, or load-bearing enough that the codebase should agree on one meaning.
-   - A **decision** worth recording: a hard-to-reverse or surprising choice with a real trade-off — not every choice, just ones someone will later ask "why did we do it this way?" about.
-   - Present proposed entries to the user; only write them once confirmed.
-3. **Write confirmed entries**:
-   - `docs/GLOSSARY.md` — one growing, append-only file at the project root. Each entry is a `### <term>` section with a short definition. Create the file (with a one-line header) only on first real entry.
-   - `docs/ADRS.md` — one growing, append-only file at the project root. Each entry is a `### <date> — <title>` section: context, decision, consequences. Create the file only on first real entry.
-   - Append new entries; never rewrite or reorder existing ones.
+2. Any glossary/ADR entries were already written inline during the loop (see above). If something worth recording only becomes obvious in hindsight while wrapping up, invoke `domain-modeling` once more here — but this is the exception, not the normal path.
 
-Do not proceed to writing `spec.md`/`design.md` — that's `spec`'s job. This skill's output is the confirmed slug plus whatever docs entries were written.
+Do not proceed to writing `spec.md`/`design.md` — that's `spec`'s job. This skill's output is the confirmed slug plus whatever docs entries `domain-modeling` wrote along the way.
 
 **Purely exploratory:** summarize the shared understanding reached. No slug, no docs, no artifact. Nothing gets written to disk.

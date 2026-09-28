@@ -12,7 +12,7 @@ Phase 2 of the spec-driven workflow (`brainstorm` → `spec` → `implement`). T
 
 Take the feature slug as an argument. If none is given, use the most recently modified directory under `.scratch/`. If `.scratch/<feature>/` already has a `spec.md` and/or `design.md`, read them first — you're revising, not starting fresh.
 
-Can run without a prior `brainstorm` — a well-understood feature doesn't need the ceremony. If `docs/GLOSSARY.md` or `docs/ADRS.md` exist, read them and stay consistent with recorded terms and decisions; if they don't exist, proceed without them.
+Can run without a prior `brainstorm` — a well-understood feature doesn't need the ceremony. If `docs/GLOSSARY.md` or `docs/adr/` exist, read them and stay consistent with recorded terms and decisions; if they don't exist, proceed without them.
 
 ## `spec.md` — the what/why
 
@@ -68,6 +68,8 @@ Structure:
 ```
 
 Before writing the Approach section, call the Skill tool with `implementation-approaches` and check whether a house approach fits (frontend, API/interface, hexagonal, Unity, or whatever's been added since) and let it shape the architecture direction. This doesn't mean tagging individual steps (still skip that, see below); it means the *Approach* paragraph itself is written with the right house convention in mind.
+
+While settling the Approach (or anywhere else in this skill a real decision crystallizes), if it's hard to reverse, surprising without context, and the result of a genuine trade-off, invoke `domain-modeling` right there to record it as an ADR — don't wait until the whole design is done. Same for a term that turns out ambiguous or load-bearing enough to need a glossary entry. Most Approach choices won't clear that bar; when in doubt, let `domain-modeling` make the call.
 
 Add a diagram only when a concrete trigger applies — don't leave it to a vague "would this help" judgment call:
 - The feature's steps span **3 or more** collaborating files/modules/services, or

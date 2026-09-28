@@ -22,10 +22,12 @@ Note the `/main` — parallel mode's step branches live at `feat/<feature-slug>/
 
 ## Writing the brief
 
-Also before executing any step, write `.scratch/<feature>/brief.md` once — a condensed digest so every step stops re-reading `spec.md`, `design.md`, `docs/GLOSSARY.md`, `docs/ADRS.md`, and a full `implementation-approaches` file from scratch. Include only what's actually load-bearing for this feature:
+Also before executing any step, write `.scratch/<feature>/brief.md` once — a condensed digest so every step stops re-reading `spec.md`, `design.md`, `docs/GLOSSARY.md`, `docs/adr/`, and a full `implementation-approaches` file from scratch. Include only what's actually load-bearing for this feature:
 
 - The relevant excerpt(s) from whichever `implementation-approaches` file(s) apply — the conventions this feature must follow, not the whole file.
-- Any glossary terms or ADRs from `docs/` that are actually relevant to this feature (not the whole growing file).
+- Any glossary terms or `docs/adr/NNNN-*.md` entries that are actually relevant to this feature (not every ADR in the directory).
+
+This skill only reads `docs/GLOSSARY.md`/`docs/adr/` — it never writes to them, even when a step's implementation reveals a hard-to-reverse decision. That belongs to `brainstorm`/`spec` (or a manual pass); recording it here would put ceremony in the middle of executing a step that's supposed to just run.
 - The project's commands: test runner, lint, build, typecheck — so every step and the final review run the same things.
 
 Point every step (and the spec-wide review at the end) at `brief.md` instead of re-embedding this material each time.
