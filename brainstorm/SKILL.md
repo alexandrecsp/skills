@@ -17,7 +17,13 @@ Model the conversation as a **design tree**: every open question branches into t
 3. **Ask the whole frontier in one round.** Number each question, state it plainly, and give your own recommended answer — don't leave it open-ended. Format:
 
    ```
-   ❓ **Q1** - **<title>**: <question>
+   ❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+
+   ➡️ <your recommended answer>
+
+   ---
+
+   ❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
 
    ➡️ <your recommended answer>
    ```
