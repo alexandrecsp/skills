@@ -9,10 +9,10 @@ Router only. Each approach lives in its own file under `references/`, self-conta
 
 | Approach | File | Applies when |
 |---|---|---|
-| Frontend UI | [references/frontend-design.md](./references/frontend-design.md) | Building or modifying user-facing interfaces, components, layouts, accessibility, client-side state |
-| API & interface design | [references/api-design.md](./references/api-design.md) | Designing REST/GraphQL endpoints, module boundaries, public interfaces, idempotency |
-| Hexagonal architecture | [references/hexagonal-pattern.md](./references/hexagonal-pattern.md) | Structuring a service/feature into domain/application/ports/adapters, separating business rules from infrastructure |
-| Unity | [references/unity.md](./references/unity.md) | Writing or reviewing Unity C#, gameplay systems, prefabs/ScriptableObjects, frame budget/performance |
+| Frontend UI | [references/FRONTEND-DESIGN.md](./references/FRONTEND-DESIGN.md) | Building or modifying user-facing interfaces, components, layouts, accessibility, client-side state |
+| API & interface design | [references/API-DESIGN.md](./references/API-DESIGN.md) | Designing REST/GraphQL endpoints, module boundaries, public interfaces, idempotency |
+| Hexagonal architecture | [references/HEXAGONAL-PATTERN.md](./references/HEXAGONAL-PATTERN.md) | Structuring a service/feature into domain/application/ports/adapters, separating business rules from infrastructure |
+| Unity | [references/UNITY.md](./references/UNITY.md) | Writing or reviewing Unity C#, gameplay systems, prefabs/ScriptableObjects, frame budget/performance |
 
 Infer which applies from the step's description and the files it touches — a step's `issues/<id>.md` doesn't tag it with an approach.
 

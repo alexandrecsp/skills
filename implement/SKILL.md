@@ -52,7 +52,7 @@ No per-step review gate — see "Spec-wide review" below, which runs once after 
 
 ## Parallel mode (`--parallel`)
 
-Runs the same per-step procedure as Sequential mode, plus the machinery to run independent steps concurrently via git worktrees — waves from the `depends`/`files` DAG, squash-merge on success, quarantine on failure. Read [references/parallel-mode.md](./references/parallel-mode.md) before running with `--parallel`; sequential runs never need it.
+Runs the same per-step procedure as Sequential mode, plus the machinery to run independent steps concurrently via git worktrees — waves from the `depends`/`files` DAG, squash-merge on success, quarantine on failure. Read [references/PARALLEL-MODE.md](./references/PARALLEL-MODE.md) before running with `--parallel`; sequential runs never need it.
 
 ## Spec-wide review
 
@@ -68,4 +68,4 @@ Once every `issues/<id>.md` is checked (or the run ends with some quarantined �
 
 Each step's own `issues/<id>.md` checkbox is the only progress record for that step — no separate progress file. A `/implement` run picks up wherever the `issues/` checkboxes and any quarantined worktrees left off; work survives a context reset because it's on disk, not in conversation state. The spec-wide review hasn't run until it's been reported to the user — a resumed run that finds all steps already checked still needs to run it if that report never happened.
 
-A resumed `--parallel` run has its own worktree sweep — see [references/parallel-mode.md](./references/parallel-mode.md).
+A resumed `--parallel` run has its own worktree sweep — see [references/PARALLEL-MODE.md](./references/PARALLEL-MODE.md).
