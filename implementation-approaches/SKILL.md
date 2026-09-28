@@ -1,6 +1,6 @@
 ---
 name: implementation-approaches
-description: Index of house implementation approaches (frontend UI, API/interface design, hexagonal architecture, Unity). Use when writing a feature's design.md Approach section during /spec, or when implementing a step from design.md during /implement, and you need to know which house approach applies.
+description: Index of house implementation approaches (frontend UI, API/interface design, hexagonal architecture, Unity). Use when writing a feature's design.md Approach section during /spec, or when implementing a step from its issues/<id>.md during /implement, and you need to know which house approach applies.
 ---
 
 # Implementation Approaches
@@ -14,6 +14,6 @@ Router only. Each approach lives in its own file under `references/`, self-conta
 | Hexagonal architecture | [references/hexagonal-pattern.md](./references/hexagonal-pattern.md) | Structuring a service/feature into domain/application/ports/adapters, separating business rules from infrastructure |
 | Unity | [references/unity.md](./references/unity.md) | Writing or reviewing Unity C#, gameplay systems, prefabs/ScriptableObjects, frame budget/performance |
 
-Infer which applies from the step's description and the files it touches — `design.md` doesn't tag steps with an approach.
+Infer which applies from the step's description and the files it touches — a step's `issues/<id>.md` doesn't tag it with an approach.
 
 If a step needs an approach not listed here, use judgment and, once the approach proves itself on real work, add a new file under `references/` and a row above.

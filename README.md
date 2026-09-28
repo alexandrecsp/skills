@@ -19,21 +19,22 @@ A frontier-tree interview loop for thinking through anything — an idea, a deci
 If the topic converges into a feature, it proposes a **feature slug**. Along the way, whenever a term or a hard-to-reverse decision crystallizes, it invokes `domain-modeling` right there to capture it — glossary terms appended to `docs/GLOSSARY.md`, decisions written as new numbered files under `docs/adr/` (`0001-<slug>.md`, `0002-<slug>.md`, ...) — instead of batching proposals for the end. If it stays exploratory, nothing is written to disk. Doesn't write `spec.md`/`design.md` itself; that's `spec`'s job.
 
 ### 2. `spec`
-Turns a converged feature scope into two artifacts under `.scratch/<feature>/`:
+Turns a converged feature scope into these artifacts under `.scratch/<feature>/`:
 
 - **`spec.md`** — the what/why. Problem, scope, and numbered Given/When/Then scenarios. Meant to stay stable once implementation starts.
-- **`design.md`** — the how. Approach (informed by `implementation-approaches`, and by `domain-modeling` when settling it surfaces an ADR-worthy decision), a diagram only when a real trigger applies (3+ collaborating files, a process/network boundary, or a contract easier shown than told), explicit `## Contracts` for any shared interface a step introduces, and a step checklist with `depends`/`scenarios`/`files` metadata forming a DAG.
+- **`design.md`** — the how. Approach (informed by `implementation-approaches`, and by `domain-modeling` when settling it surfaces an ADR-worthy decision), a diagram only when a real trigger applies (3+ collaborating files, a process/network boundary, or a contract easier shown than told), explicit `## Contracts` for any shared interface a step introduces. No step list — that's `issues/`, below.
+- **`issues/<id>.md`** — one file per step (plain numeric id, e.g. `issues/1.md`), each with its own `depends`/`scenarios`/`files` metadata (forming a DAG across files) and a `- [ ] Done` checkbox `implement` flips as it works.
 
 Can run standalone without a prior `brainstorm` for well-understood features.
 
 ### 3. `implement`
-Executes `design.md` step by step, refusing to run at all if it doesn't exist yet. Before touching any step: creates branch `feat/<feature-slug>/main`, commits `spec.md`/`design.md`, and writes a condensed `.scratch/<feature>/brief.md` (relevant approach excerpts, glossary terms, relevant `docs/adr/` entries, project commands) so steps stop re-reading full source docs. Read-only with respect to `docs/GLOSSARY.md`/`docs/adr/` — it never writes new entries, even when a step reveals a hard-to-reverse decision; that stays `brainstorm`/`spec`'s job via `domain-modeling`.
+Executes the feature's steps — one `issues/<id>.md` per step — refusing to run at all if `design.md` or `issues/` doesn't exist yet. Before touching any step: creates branch `feat/<feature-slug>/main`, commits `spec.md`/`design.md`/`issues/`, and writes a condensed `.scratch/<feature>/brief.md` (relevant approach excerpts, glossary terms, relevant `docs/adr/` entries, project commands) so steps stop re-reading full source docs. Read-only with respect to `docs/GLOSSARY.md`/`docs/adr/` — it never writes new entries, even when a step reveals a hard-to-reverse decision; that stays `brainstorm`/`spec`'s job via `domain-modeling`.
 
 - **TDD when a step is behavioral**: red → green → refactor. Skipped for pure config/plumbing steps.
-- **Sequential mode** (default): one step at a time, commit via `commit` after each.
-- **Parallel mode** (`--parallel`): topologically sorts the `depends` DAG into waves, checks `files` for conflicts the DAG doesn't know about, runs each step in its own git worktree/subagent, squash-merges on success, quarantines on failure without blocking unrelated work.
+- **Sequential mode** (default): one step at a time, flip that step's own `issues/<id>.md` checkbox, commit via `commit` after each.
+- **Parallel mode** (`--parallel`): topologically sorts the `depends` DAG (read from `issues/*.md`) into waves, checks `files` for conflicts the DAG doesn't know about, runs each step in its own git worktree/subagent. Each step owns its own `issues/<id>.md` exclusively, so the worker flips its own checkbox as part of its own commit — no shared-file write conflict, no orchestrator-only mutation step (see `docs/adr/0001-per-step-issue-files.md`). Squash-merges carry that flip over on success; on failure, the worker notes the reason in its own `issues/<id>.md` before the step is quarantined (left unmerged) without blocking unrelated work.
 - **Spec-wide review**: once, after all steps are done — two parallel subagents check the Spec axis (does the whole diff satisfy every scenario) and Quality axis (bugs, simplification, cross-step inconsistency), one auto-fix + re-review round, then surface anything left to the user.
-- Progress lives entirely in `design.md`'s checkboxes — resumable across sessions with no separate state file.
+- Progress lives entirely in each step's own `issues/<id>.md` checkbox — resumable across sessions with no separate state file.
 
 ## Standalone utilities
 
@@ -70,7 +71,8 @@ Executes `design.md` step by step, refusing to run at all if it doesn't exist ye
 
 ## Conventions worth knowing
 
-- `disable-model-invocation: true` on `brainstorm`/`spec`/`implement` — they only run when explicitly invoked as `/brainstorm`, `/spec`, `/implement`, never auto-triggered by the model. Same flag on `domain-modeling`, for the same reason: it only runs when `brainstorm`/`spec` explicitly call it, never on its own.
+- `disable-model-invocation: true` on `brainstorm`/`spec`/`implement` — they only run when explicitly invoked as `/brainstorm`, `/spec`, `/implement`, never auto-triggered by the model. `domain-modeling` deliberately does **not** carry this flag — that flag blocks even an explicit `Skill`-tool call from another skill, not just model auto-triggering, which would have broken `brainstorm`/`spec`'s ability to invoke it inline.
 - Feature state lives on disk under `.scratch/<feature>/`, never in conversation memory — any phase can resume cold.
+- `docs/adr/` at the project root holds this framework's own architectural decisions (e.g. `0001-per-step-issue-files.md`) — same mechanism `domain-modeling` uses for any project it's invoked in.
 - Adding a new house approach: drop a new file under `implementation-approaches/references/` and add a row to its router table once the approach has proven itself on real work.
 - Adding a new diagram type: same pattern under `to-diagram/references/`.

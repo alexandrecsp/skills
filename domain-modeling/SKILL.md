@@ -1,7 +1,6 @@
 ---
 name: domain-modeling
 description: Shared logic for sharpening terminology and recording architectural decisions in the spec-driven framework's docs. Invoked explicitly by `brainstorm` and `spec` the moment a term or a hard-to-reverse decision resolves — never on its own.
-disable-model-invocation: true
 ---
 
 # Domain Modeling
