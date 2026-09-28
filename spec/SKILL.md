@@ -1,6 +1,6 @@
 ---
 name: spec
-description: Plan phase of the spec-driven workflow. Writes a feature's spec.md (what/why, Given/When/Then), design.md (how, no step list), and one issues/<id>.md file per step into .scratch/<feature>/. Only invoke when the user explicitly runs /spec.
+description: Plan phase of the spec-driven workflow. Writes a feature's spec.md (what/why, Given/When/Then), design.md (how, no step list), and one issues/<id>.md file per step into .scratch/<feature>/.
 disable-model-invocation: true
 ---
 

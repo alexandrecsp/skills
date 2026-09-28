@@ -1,6 +1,6 @@
 ---
 name: commit
-description: Writes a git commit message whose headline states the effect of applying the commit ("If you apply this commit it will...") and a body listing at most 5 of the most significant changes. Use when the user asks to commit, write a commit message, or says "/commit".
+description: Writes a git commit message whose headline states the effect of applying the commit ("If you apply this commit it will...") and a body listing at most 5 of the most significant changes. Use when committing changes or writing a commit message.
 ---
 
 # Commit

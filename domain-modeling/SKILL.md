@@ -26,7 +26,7 @@ Invoked by `brainstorm` (during the interview loop) and `spec` (while writing `d
 ## Writing
 
 - `docs/GLOSSARY.md` — one growing, append-only file at the project root. Format in [references/GLOSSARY-FORMAT.md](./references/GLOSSARY-FORMAT.md). Create the file (one-line header) only on first real entry. Append; never rewrite or reorder existing entries.
-- `docs/adr/NNNN-<slug>.md` — one file per decision. Format and numbering rules in [references/ADR-FORMAT.md](./references/ADR-FORMAT.md). Create the `docs/adr/` directory lazily, only when the first ADR is needed. Never edit a past ADR's decision text — a change of mind gets a new ADR that marks the old one superseded.
+- `docs/adr/NNNN-<slug>.md` — one file per decision. Format, numbering, and directory-creation rules in [references/ADR-FORMAT.md](./references/ADR-FORMAT.md). Never edit a past ADR's decision text — a change of mind gets a new ADR that marks the old one superseded.
 
 ## Returning control
 

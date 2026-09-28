@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-description: Thinking partner for any topic — interviews you with a frontier-tree loop, dispatching subagents to fact-find when needed. If the topic converges into a feature-shaped scope, continues into the spec-driven path (feature slug + glossary/ADR entries captured inline via `domain-modeling`) as phase 1 of `spec`/`implement`; otherwise ends purely conversational, nothing written to disk. Only invoke when the user explicitly runs /brainstorm.
+description: Thinking partner for any topic — interviews you with a frontier-tree loop, dispatching subagents to fact-find when needed. If the topic converges into a feature-shaped scope, continues into the spec-driven path (feature slug + glossary/ADR entries captured inline via `domain-modeling`) as phase 1 of `spec`/`implement`; otherwise ends purely conversational, nothing written to disk.
 disable-model-invocation: true
 ---
 
