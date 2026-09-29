@@ -1,53 +1,70 @@
 ---
 name: commit
-description: Writes a git commit message whose headline states the effect of applying the commit ("If you apply this commit it will...") and a body listing at most 5 of the most significant changes. Use when committing changes or writing a commit message.
+description: Split the working-tree changes into green commits (each one leaves the app building and its tests passing) and write each message as a verb-first headline stating the application's new state after applying it. Use when committing changes, writing a commit message, or when a workflow says to commit.
 ---
 
-# Commit
-
-## Overview
-
-A commit message should tell a reviewer what happens *if they apply it* — not narrate what the author did. This skill produces messages in the imperative "if applied, this commit will..." style (the same convention Git itself uses for its own generated messages), plus a short, prioritized list of the most significant changes — never a full diff recap.
+Turn the working tree into a short series of **green** commits. Green means the application builds and its tests pass at that commit, so any commit can be checked out, reverted, or bisected on its own.
 
 ## Process
 
-1. Run `git status` and `git diff --staged` (fall back to `git diff` if nothing is staged, and tell the user you're about to stage it) to see the actual changes. Never write a message from assumption or from the user's description alone if the repo is available.
-2. Split into commits that make sense: if the changes touch unrelated concerns (e.g. an unrelated bugfix mixed with a refactor, or config changes mixed with feature work), don't lump them into one commit. Group changes by the single effect each commit should have, `git reset` staged-but-mixed changes if needed, and stage/commit each group separately with `git add <specific files>` — never `git add -A` across unrelated groups. Small, genuinely related changes stay in one commit; don't split for its own sake.
-3. For each commit (repeat steps 4-6 below per group):
-4. Identify the single most significant effect of the change — this becomes the headline.
-5. Identify up to 5 of the most significant individual changes, ranked by importance. If there are fewer than 5 meaningfully distinct changes, list fewer — never pad.
-6. Write the message per Output Format.
-7. Show the message(s) to the user before committing, unless they've already approved committing in this turn — **or** this skill was invoked from an automated workflow with no one there to approve mid-run (e.g. `implement`'s per-step commits). In that case, the invocation to run the workflow at all is the approval; commit directly and include the message verbatim in that step's report so the user still sees it, just after the fact.
+### 1. Read the changes
 
-## Output Format
+Run `git status`, `git diff` and `git diff --staged`. Read `git log --oneline -n 10` for the repo's message language and style. Write nothing from the user's description alone while the diff is available.
 
-**Headline**: one line, imperative mood, completing the sentence "If you apply this commit it will...". Keep it under ~70 characters where possible. Do not literally include the phrase "If you apply this commit" in the headline itself — write the completion only (e.g. `Fix race condition in session cleanup`), matching Git's own convention for generated commit summaries.
+Done when every changed file and hunk is accounted for.
 
-**Body**: a blank line, then a bullet list of at most 5 items, most significant first. Each bullet is a concrete, specific change — not a vague category.
+### 2. Group into commits
+
+A group is one **effect**: one thing that is true after the commit and wasn't before. Order the groups so each stands on the ones before it:
+
+- Prefactoring comes before the feature it enables.
+- Tests travel with the code they cover.
+- A rename, a move or a formatting change is its own group, apart from behaviour changes.
+- Groups that only work together (a signature change and its callers) merge into one; green outranks small.
+
+Stage each group by explicit path (`git add <paths>`). When hunks of one file belong to different groups, stage them non-interactively: trim a patch from `git diff <file>` and apply it with `git apply --cached`.
+
+Done when the groups cover the whole diff and one sentence names each group's effect.
+
+### 3. Verify green, then commit, per group
+
+For each group, in order:
+
+1. Stage the group. Set the rest aside so the checks see only this commit (`git stash push --keep-index --include-untracked`).
+2. Run the repo's fast checks: typecheck, build, and the tests the group touches. Take the commands from the repo (`package.json` scripts, Makefile, CI config).
+3. Restore the rest (`git stash pop`).
+4. Write the message (below), then commit.
+
+A red group merges into its dependency and is checked again. Checks that cannot run here are reported to the user with the commit, never skipped silently.
+
+Done when every commit was checked green and `git status` shows nothing left over, or only what the user chose to keep out.
+
+### 4. Approve
+
+Show the messages before committing. When a workflow invoked this skill with no one there to approve mid-run (`implement`'s commit step), that invocation is the approval: commit, and include each message verbatim in the report.
+
+## The message
+
+The message answers one question: **after applying this commit, what is the new state of the application?**
+
+**Headline**: one line, about 70 characters at most, that starts with a verb completing *"Ao aplicar este commit, ele…"* (*"If applied, this commit will…"*), and names the new state. Write the completion only, verb first, as an action the commit performs: the verb form that fits the sentence is third person present in Portuguese (`Altera`, `Corrige`, `Adiciona`) and imperative in English (`Change`, `Fix`, `Add`).
+
+| Instead of | Write |
+|---|---|
+| `Alteração de nome da variável X` | `Altera o nome da variável X para Y` |
+| `Corrigido bug no login` | `Corrige o login para aceitar e-mails com maiúsculas` |
+| `Fixed race condition` | `Fix race condition in session cleanup` |
+
+Name what is now true of the application (the behaviour, the name, the rule), not the work that produced it.
+
+**Body**: optional. A blank line, then at most 5 bullets, most significant first, each one a concrete change. Fewer bullets are fine; the headline alone is fine when it says everything.
+
+**Language**: the language of the repo's `git log`; with no history, the language the user writes in.
 
 ```
-<Headline: imperative, states the effect>
+Corrige a limpeza de sessões para não liberar a mesma sessão duas vezes
 
-- <Most significant change>
-- <Next most significant change>
-- <...>
+- Protege a remoção de sessões com um lock para requisições concorrentes
+- Adiciona teste de regressão que reproduz a intercalação que causava o crash
+- Registra em debug os IDs das sessões removidas
 ```
-
-### Example
-
-```
-Fix race condition in session cleanup
-
-- Guard session eviction with a lock so concurrent requests can't double-free
-- Add regression test reproducing the interleaving that caused the crash
-- Log evicted session IDs at debug level for post-incident tracing
-```
-
-## Red Flags
-
-- Headline phrased as what the author did ("Fixed bug", "Added tests") instead of what applying the commit does
-- Body describes the diff mechanically (file-by-file) rather than the significant changes
-- More than 3 bullets, or bullets padded with trivial/cosmetic changes to reach a count
-- Message written without reading the actual diff
-- Unrelated changes (different files, different concerns) squashed into a single commit for convenience
-- Splitting a single coherent change into multiple commits just to pad commit count

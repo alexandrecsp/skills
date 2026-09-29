@@ -1,13 +1,13 @@
 ---
 name: diagnosing-bugs
-description: Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", or reports something broken/throwing/failing/slow. Also `implement`'s escape hatch when a step turns out to rest on a bug rather than an unsettled design question.
+description: Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", or reports something broken/throwing/failing/slow.
 ---
 
 # Diagnosing Bugs
 
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
-When exploring the codebase, read `docs/GLOSSARY.md` (if it exists) for a clear mental model of domain terms, and check `docs/ADRS/` for decisions in the area you're touching.
+When exploring the codebase, read `CONTEXT.md` (if it exists) to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
 
 ## Redact
 
@@ -117,7 +117,7 @@ Write the regression test **before the fix**, but only if there is a **correct s
 
 A correct seam is one where the test exercises the **real bug pattern** as it occurs at the call site. If the only available seam is too shallow (single-caller test when the bug needs multiple callers, unit test that can't replicate the chain that triggered the bug), a regression test there gives false confidence.
 
-**If no correct seam exists, that itself is the finding.** Note it. The codebase architecture is preventing the bug from being locked down. Flag this for the next phase — and if fixing it would mean a hard-to-reverse restructuring, that's `domain-modeling`'s call on whether it clears the ADR bar, not this skill's.
+**If no correct seam exists, that itself is the finding.** Note it. The codebase architecture is preventing the bug from being locked down. Flag this for the next phase.
 
 If a correct seam exists:
 
@@ -135,14 +135,4 @@ Required before declaring done:
 - [ ] Regression test passes (or absence of seam is documented)
 - [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix)
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
-- [ ] The hypothesis that turned out correct is stated in the commit message (via the `commit` skill), so the next debugger learns
-
-## When invoked by `implement`
-
-A step's `issues/<id>-<slug>.md` can turn up something that isn't an unsettled design question but an actual bug — existing behavior that's wrong, not a decision nobody made. See `implement/SKILL.md`'s "When a step rests on a bug, not a design question" for how that gate dispatches this skill and resumes the step — this file only describes what runs once invoked. The fix and its regression test land on the step's own branch/worktree; nothing here writes outside that step's scope.
-
-## Where it fits
-
-Standalone and reach-for-it-anytime: nothing stops you typing `/diagnosing-bugs` (or just describing the broken behavior) outside `brainstorm`/`spec`/`implement` entirely.
-
-Inside the spec-driven workflow, it's `implement`'s escape hatch for the sibling case to `prototype`'s: a step blocked not by an undecided design question but by an actual defect standing in its way.
+- [ ] The hypothesis that turned out correct is stated in the commit / PR message, so the next debugger learns
