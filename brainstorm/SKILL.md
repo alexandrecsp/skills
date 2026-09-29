@@ -35,7 +35,7 @@ Keep rounds proportional to the topic. A small topic might converge in one round
 
 ## Capturing terms and decisions as they happen
 
-Don't wait for the session to end. The moment a round settles a term that's ambiguous/contested/load-bearing, or lands on a choice that's hard to reverse, surprising, and the result of a real trade-off, invoke the `domain-modeling` skill right there, mid-round, handing it what just resolved. It challenges/sharpens, confirms with the user, and writes `docs/GLOSSARY.md` / `docs/adr/NNNN-*.md` immediately — don't collect candidates to propose in a batch later. Most rounds won't produce anything that qualifies; that's fine, `domain-modeling` is the one deciding whether a given decision clears the ADR bar, not this loop.
+Don't wait for the session to end. The moment a round settles a term that's ambiguous/contested/load-bearing, or lands on a choice that's hard to reverse, surprising, and the result of a real trade-off, invoke the `domain-modeling` skill right there, mid-round, handing it what just resolved. It challenges/sharpens, confirms with the user, and writes `docs/GLOSSARY.md` / `docs/ADRS/NNNN-*.md` immediately — don't collect candidates to propose in a batch later. Most rounds won't produce anything that qualifies; that's fine, `domain-modeling` is the one deciding whether a given decision clears the ADR bar, not this loop.
 
 ## Ending the session
 

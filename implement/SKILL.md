@@ -1,18 +1,18 @@
 ---
 name: implement
-description: Implement phase of the spec-driven workflow. Executes a feature's issues/<id>.md files step by step (or in parallel waves via git worktrees), following TDD where a step's behavior warrants it, then runs one holistic review of the whole spec before finishing.
+description: Implement phase of the spec-driven workflow. Executes a feature's issues/<id>-<slug>.md files step by step (or in parallel waves via git worktrees), following TDD where a step's behavior warrants it, then runs one holistic review of the whole spec before finishing.
 disable-model-invocation: true
 ---
 
 # Implement
 
-Phase 3 of the spec-driven workflow (`brainstorm` → `spec` → `implement`). Executes a feature's steps — one `issues/<id>.md` file per step — one at a time or in dependency-ordered parallel waves, then reviews the whole feature once before calling it done.
+Phase 3 of the spec-driven workflow (`brainstorm` → `spec` → `implement`). Executes a feature's steps — one `issues/<id>-<slug>.md` file per step — one at a time or in dependency-ordered parallel waves, then reviews the whole feature once before calling it done.
 
 ## The one hard gate
 
 Take the feature slug as an argument, or use the most recently modified `.scratch/` directory if none is given. **If `.scratch/<feature>/design.md` doesn't exist, or `.scratch/<feature>/issues/` is missing or empty, refuse and point the user at `/spec`.** Every other phase degrades gracefully; this one doesn't — no code without a written plan.
 
-Read `spec.md` and `design.md` in full, and list every `issues/<id>.md`, before doing anything.
+Read `spec.md` and `design.md` in full, and list every `issues/<id>-<slug>.md`, before doing anything.
 
 ## Starting the feature branch
 
@@ -22,13 +22,13 @@ Note the `/main` — parallel mode's step branches live at `feat/<feature-slug>/
 
 ## Writing the brief
 
-Also before executing any step, write `.scratch/<feature>/brief.md` once — a condensed digest so every step stops re-reading `spec.md`, `design.md`, `docs/GLOSSARY.md`, `docs/adr/`, and a full `architecture-patterns` file from scratch. Include only what's actually load-bearing for this feature:
+Also before executing any step, write `.scratch/<feature>/brief.md` once — a condensed digest so every step stops re-reading `spec.md`, `design.md`, `docs/GLOSSARY.md`, `docs/ADRS/`, and a full `architecture-patterns` file from scratch. Include only what's actually load-bearing for this feature:
 
 - The relevant excerpt(s) from whichever `architecture-patterns` file(s) apply — the conventions this feature must follow, not the whole file.
-- Any glossary terms or `docs/adr/NNNN-*.md` entries that are actually relevant to this feature (not every ADR in the directory).
+- Any glossary terms or `docs/ADRS/NNNN-*.md` entries that are actually relevant to this feature (not every ADR in the directory).
 - The project's commands: test runner, lint, build, typecheck — so every step and the final review run the same things.
 
-This skill only reads `docs/GLOSSARY.md`/`docs/adr/` — it never writes to them, even when a step's implementation reveals a hard-to-reverse decision. That belongs to `brainstorm`/`spec` (or a manual pass); recording it here would put ceremony in the middle of executing a step that's supposed to just run.
+This skill only reads `docs/GLOSSARY.md`/`docs/ADRS/` — it never writes to them, even when a step's implementation reveals a hard-to-reverse decision. That belongs to `brainstorm`/`spec` (or a manual pass); recording it here would put ceremony in the middle of executing a step that's supposed to just run.
 
 Point every step (and the spec-wide review at the end) at `brief.md` instead of re-embedding this material each time.
 
@@ -63,10 +63,10 @@ On return: resume the step with the fix already in place — the regression test
 
 ## Sequential mode (default)
 
-For each step whose `issues/<id>.md` is still unchecked, in dependency order:
+For each step whose `issues/<id>-<slug>.md` is still unchecked, in dependency order:
 
 1. Implement the step per "TDD for behavioral steps" and "When a step rests on an unsettled design question" above, using `brief.md` instead of re-reading the full source docs. While writing code, let the relevant approach skill (`architecture-patterns`) trigger naturally — it auto-invokes based on what you're building.
-2. Once the step's own validation passes (green suite, or build/lint/typecheck for a non-behavioral step): flip that step's `- [ ] Done` to `- [x] Done` in its own `issues/<id>.md`, then commit by invoking the `commit` skill (automated-run exception applies — see that skill) — the flip goes in the same commit as the step's own work, not a separate one.
+2. Once the step's own validation passes (green suite, or build/lint/typecheck for a non-behavioral step): flip that step's `- [ ] Done` to `- [x] Done` in its own `issues/<id>-<slug>.md`, then commit by invoking the `commit` skill (automated-run exception applies — see that skill) — the flip goes in the same commit as the step's own work, not a separate one.
 
 No per-step review gate — see "Spec-wide review" below, which runs once after every step is done.
 
@@ -76,16 +76,16 @@ Runs the same per-step procedure as Sequential mode, plus the machinery to run i
 
 ## Spec-wide review
 
-Once every `issues/<id>.md` is checked (or the run ends with some quarantined — see above), review the feature once, holistically, instead of per step:
+Once every `issues/<id>-<slug>.md` is checked (or the run ends with some quarantined — see above), review the feature once, holistically, instead of per step:
 
 1. **Dispatch two review subagents in parallel, via the Agent tool** — actually spawn them, waiting synchronously for both to finish (not `run_in_background`) before proceeding. Give each `brief.md`, the full diff of `feat/<feature-slug>/main` against the branch it was created from, and all of `spec.md`:
    - **Spec axis** — does the merged diff, taken as a whole, actually satisfy every scenario in `spec.md` — not just the scenario each step claimed, but the feature end to end.
    - **Quality axis** — is the diff clean across the whole feature (bugs, obvious simplification/reuse misses, inconsistencies introduced by different steps landing independently).
 2. On any findings: apply one auto-fix, then one re-review (both axes again). Anything still unresolved after that gets surfaced to the user — don't loop further.
-3. This is the only review gate in this skill — there's no per-step equivalent. It trades early, cheap detection (catching a step-4-sized problem before ten more steps build on it) for running the review exactly once per feature instead of once per step. If that trade-off stops paying off on a given feature (a step's `issues/<id>.md` touches a shared contract you're not confident about), that's a signal to strengthen the contract in `spec`'s `## Contracts` section next time, not to silently add a review back in here.
+3. This is the only review gate in this skill — there's no per-step equivalent. It trades early, cheap detection (catching a step-4-sized problem before ten more steps build on it) for running the review exactly once per feature instead of once per step. If that trade-off stops paying off on a given feature (a step's `issues/<id>-<slug>.md` touches a shared contract you're not confident about), that's a signal to strengthen the contract in `spec`'s `## Contracts` section next time, not to silently add a review back in here.
 
 ## Progress and resumability
 
-Each step's own `issues/<id>.md` checkbox is the only progress record for that step — no separate progress file. A `/implement` run picks up wherever the `issues/` checkboxes and any quarantined worktrees left off; work survives a context reset because it's on disk, not in conversation state. The spec-wide review hasn't run until it's been reported to the user — a resumed run that finds all steps already checked still needs to run it if that report never happened.
+Each step's own `issues/<id>-<slug>.md` checkbox is the only progress record for that step — no separate progress file. A `/implement` run picks up wherever the `issues/` checkboxes and any quarantined worktrees left off; work survives a context reset because it's on disk, not in conversation state. The spec-wide review hasn't run until it's been reported to the user — a resumed run that finds all steps already checked still needs to run it if that report never happened.
 
 A resumed `--parallel` run has its own worktree sweep — see [references/PARALLEL-MODE.md](./references/PARALLEL-MODE.md).

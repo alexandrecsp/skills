@@ -1,18 +1,18 @@
 ---
 name: spec
-description: Plan phase of the spec-driven workflow. Writes a feature's spec.md (what/why, Given/When/Then), design.md (how, no step list), and one issues/<id>.md file per step into .scratch/<feature>/.
+description: Plan phase of the spec-driven workflow. Writes a feature's spec.md (what/why, Given/When/Then), design.md (how, no step list), and one issues/<id>-<slug>.md file per step into .scratch/<feature>/.
 disable-model-invocation: true
 ---
 
 # Spec
 
-Phase 2 of the spec-driven workflow (`brainstorm` → `spec` → `implement`). Turns a converged feature scope into a set of frozen-enough artifacts that `implement` can execute against: `spec.md`, `design.md`, and one `issues/<id>.md` per step.
+Phase 2 of the spec-driven workflow (`brainstorm` → `spec` → `implement`). Turns a converged feature scope into a set of frozen-enough artifacts that `implement` can execute against: `spec.md`, `design.md`, and one `issues/<id>-<slug>.md` per step.
 
 ## Resolving the feature
 
-Take the feature slug as an argument. If none is given, use the most recently modified directory under `.scratch/`. If `.scratch/<feature>/` already has a `spec.md`, `design.md`, and/or `issues/`, read them first — you're revising, not starting fresh. Don't silently rewrite an `issues/<id>.md` that's already checked `[x]` (or mid-flight) without calling it out to the user — a revision that reshapes an already-done step's scope needs their say, not a silent overwrite.
+Take the feature slug as an argument. If none is given, use the most recently modified directory under `.scratch/`. If `.scratch/<feature>/` already has a `spec.md`, `design.md`, and/or `issues/`, read them first — you're revising, not starting fresh. Don't silently rewrite an `issues/<id>-<slug>.md` that's already checked `[x]` (or mid-flight) without calling it out to the user — a revision that reshapes an already-done step's scope needs their say, not a silent overwrite.
 
-Can run without a prior `brainstorm` — a well-understood feature doesn't need the ceremony. If `docs/GLOSSARY.md` or `docs/adr/` exist, read them and stay consistent with recorded terms and decisions; if they don't exist, proceed without them.
+Can run without a prior `brainstorm` — a well-understood feature doesn't need the ceremony. If `docs/GLOSSARY.md` or `docs/ADRS/` exist, read them and stay consistent with recorded terms and decisions; if they don't exist, proceed without them.
 
 ## `spec.md` — the what/why
 
@@ -61,7 +61,7 @@ Structure:
 <explicit contract for each shared port/interface introduced by a step — see below; otherwise `None - <reason>`>
 ```
 
-The step list itself doesn't live here — see `issues/<id>.md` below.
+The step list itself doesn't live here — see `issues/<id>-<slug>.md` below.
 
 Before writing the Approach section, call the Skill tool with `architecture-patterns` and check whether a house approach fits (frontend, API/interface, hexagonal, Unity, or whatever's been added since) and let it shape the architecture direction. This doesn't mean tagging individual steps (still skip that, see below); it means the *Approach* paragraph itself is written with the right house convention in mind.
 
@@ -78,9 +78,9 @@ Use real names from the codebase either way; never invented components.
 
 For any step that introduces or changes a **shared port, contract, or interface** other steps will depend on (e.g. a new domain entity's states, an API's error semantics, a port's method contract) — write it explicitly in the `## Contracts` section: what states/errors exist, who owns deciding what, what a caller can assume. This is exactly the class of assumption that, left implicit, turns into an expensive mid-implementation rewrite once `implement`'s final review finds the gap — write it down once during planning instead. If no step introduces a shared contract, keep the `## Contracts` heading and write `None - <reason>` rather than dropping the section — the same reasoning as `## Diagram` above.
 
-## `issues/<id>.md` — one file per step
+## `issues/<id>-<slug>.md` — one file per step
 
-Each step in the plan gets its own file at `.scratch/<feature>/issues/<id>.md` — plain numeric id, no padding (`issues/1.md`, `issues/2.md`, ...). This is what `implement` executes against; `design.md` only carries the shape of the solution, not the step-by-step breakdown.
+Each step in the plan gets its own file at `.scratch/<feature>/issues/<id>-<slug>.md` — plain numeric id (no padding), a hyphen, then a short kebab-case slug from the step's title (`issues/1-create-user-entity.md`, `issues/2-wire-up-repository.md`, ...). This is what `implement` executes against; `design.md` only carries the shape of the solution, not the step-by-step breakdown.
 
 Structure:
 
@@ -105,4 +105,4 @@ Rules:
 
 ## Done
 
-Report `spec.md`, `design.md`, and the full list of `issues/<id>.md` files written. Don't start implementing — that's `implement`'s job.
+Report `spec.md`, `design.md`, and the full list of `issues/<id>-<slug>.md` files written. Don't start implementing — that's `implement`'s job.

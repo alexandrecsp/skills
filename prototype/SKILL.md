@@ -34,7 +34,7 @@ That pointer records *what* was decided, not *why*. Whether *why* also needs rec
 
 ## When invoked by `implement`
 
-A step's `issues/<id>.md` can turn up a question `spec` assumed was settled but wasn't. See `implement/SKILL.md`'s "When a step rests on an unsettled design question" for how that gate dispatches this skill and resumes the step — this file only describes what runs once invoked.
+A step's `issues/<id>-<slug>.md` can turn up a question `spec` assumed was settled but wasn't. See `implement/SKILL.md`'s "When a step rests on an unsettled design question" for how that gate dispatches this skill and resumes the step — this file only describes what runs once invoked.
 
 ## It's working if
 
