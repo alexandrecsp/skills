@@ -22,9 +22,9 @@ Note the `/main` — parallel mode's step branches live at `feat/<feature-slug>/
 
 ## Writing the brief
 
-Also before executing any step, write `.scratch/<feature>/brief.md` once — a condensed digest so every step stops re-reading `spec.md`, `design.md`, `docs/GLOSSARY.md`, `docs/adr/`, and a full `implementation-approaches` file from scratch. Include only what's actually load-bearing for this feature:
+Also before executing any step, write `.scratch/<feature>/brief.md` once — a condensed digest so every step stops re-reading `spec.md`, `design.md`, `docs/GLOSSARY.md`, `docs/adr/`, and a full `architecture-patterns` file from scratch. Include only what's actually load-bearing for this feature:
 
-- The relevant excerpt(s) from whichever `implementation-approaches` file(s) apply — the conventions this feature must follow, not the whole file.
+- The relevant excerpt(s) from whichever `architecture-patterns` file(s) apply — the conventions this feature must follow, not the whole file.
 - Any glossary terms or `docs/adr/NNNN-*.md` entries that are actually relevant to this feature (not every ADR in the directory).
 - The project's commands: test runner, lint, build, typecheck — so every step and the final review run the same things.
 
@@ -45,7 +45,7 @@ If a step you judged non-behavioral turns out to have real logic once you're in 
 
 For each step whose `issues/<id>.md` is still unchecked, in dependency order:
 
-1. Implement the step per "TDD for behavioral steps" above, using `brief.md` instead of re-reading the full source docs. While writing code, let the relevant approach skill (`implementation-approaches`) trigger naturally — it auto-invokes based on what you're building.
+1. Implement the step per "TDD for behavioral steps" above, using `brief.md` instead of re-reading the full source docs. While writing code, let the relevant approach skill (`architecture-patterns`) trigger naturally — it auto-invokes based on what you're building.
 2. Once the step's own validation passes (green suite, or build/lint/typecheck for a non-behavioral step): flip that step's `- [ ] Done` to `- [x] Done` in its own `issues/<id>.md`, then commit by invoking the `commit` skill (automated-run exception applies — see that skill) — the flip goes in the same commit as the step's own work, not a separate one.
 
 No per-step review gate — see "Spec-wide review" below, which runs once after every step is done.

@@ -63,7 +63,7 @@ Structure:
 
 The step list itself doesn't live here — see `issues/<id>.md` below.
 
-Before writing the Approach section, call the Skill tool with `implementation-approaches` and check whether a house approach fits (frontend, API/interface, hexagonal, Unity, or whatever's been added since) and let it shape the architecture direction. This doesn't mean tagging individual steps (still skip that, see below); it means the *Approach* paragraph itself is written with the right house convention in mind.
+Before writing the Approach section, call the Skill tool with `architecture-patterns` and check whether a house approach fits (frontend, API/interface, hexagonal, Unity, or whatever's been added since) and let it shape the architecture direction. This doesn't mean tagging individual steps (still skip that, see below); it means the *Approach* paragraph itself is written with the right house convention in mind.
 
 While settling the Approach (or anywhere else in this skill a real decision crystallizes), if it's hard to reverse, surprising without context, and the result of a genuine trade-off, invoke `domain-modeling` right there to record it as an ADR — don't wait until the whole design is done. Same for a term that turns out ambiguous or load-bearing enough to need a glossary entry. Most Approach choices won't clear that bar; when in doubt, let `domain-modeling` make the call.
 

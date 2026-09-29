@@ -22,7 +22,7 @@ If the topic converges into a feature, it proposes a **feature slug**. Along the
 Turns a converged feature scope into these artifacts under `.scratch/<feature>/`:
 
 - **`spec.md`** — the what/why. Problem, scope, and numbered Given/When/Then scenarios. Meant to stay stable once implementation starts.
-- **`design.md`** — the how. Approach (informed by `implementation-approaches`, and by `domain-modeling` when settling it surfaces an ADR-worthy decision), a diagram only when a real trigger applies (3+ collaborating files, a process/network boundary, or a contract easier shown than told), explicit `## Contracts` for any shared interface a step introduces. No step list — that's `issues/`, below.
+- **`design.md`** — the how. Approach (informed by `architecture-patterns`, and by `domain-modeling` when settling it surfaces an ADR-worthy decision), a diagram only when a real trigger applies (3+ collaborating files, a process/network boundary, or a contract easier shown than told), explicit `## Contracts` for any shared interface a step introduces. No step list — that's `issues/`, below.
 - **`issues/<id>.md`** — one file per step (plain numeric id, e.g. `issues/1.md`), each with its own `depends`/`scenarios`/`files` metadata (forming a DAG across files) and a `- [ ] Done` checkbox `implement` flips as it works.
 
 Can run standalone without a prior `brainstorm` for well-understood features.
@@ -43,7 +43,7 @@ Executes the feature's steps — one `issues/<id>.md` per step — refusing to r
 | `commit` | Writes commit messages in "if you apply this commit it will..." style with a short, prioritized bullet list — never a diff recap. Splits unrelated changes into separate commits. Used both directly and internally by `implement`. |
 | `domain-modeling` | Shared write logic for `docs/GLOSSARY.md` and `docs/adr/`. Never auto-triggers or runs standalone — `brainstorm` and `spec` invoke it inline the moment a term or an ADR-worthy decision (hard to reverse, surprising, a real trade-off) resolves. Challenges fuzzy terms, confirms with the user, then writes immediately. `implement` reads these docs but never calls this skill. |
 | `to-diagram` | Builds a Mermaid diagram (sequence, C4, flowchart, or roadmap) from real codebase names only — never invented components. Identifies the type, confirms with the user, builds from the matching template (`sequence.md`, `c4.md`, `flowchart.md`, `roadmap.md`). Used internally by `spec` when a design needs a flow diagram. |
-| `implementation-approaches` | Router (not a skill invoked on its own) to house conventions for a given kind of work: `frontend-design.md`, `api-design.md`, `hexagonal-pattern.md`, `unity.md`. Consulted by `spec` when writing the Approach section and left to auto-trigger during `implement` while writing code. |
+| `architecture-patterns` | Router (not a skill invoked on its own) to house conventions for a given kind of work: `frontend-design.md`, `api-design.md`, `hexagonal-pattern.md`, `unity.md`. Consulted by `spec` when writing the Approach section and left to auto-trigger during `implement` while writing code. |
 
 ## Directory layout
 
@@ -62,7 +62,7 @@ Executes the feature's steps — one `issues/<id>.md` per step — refusing to r
 │   ├── SKILL.md
 │   └── references/
 │       └── {sequence,c4,flowchart,roadmap}.md   (templates)
-├── implementation-approaches/
+├── architecture-patterns/
 │   ├── SKILL.md                              (router)
 │   └── references/
 │       └── {frontend-design,api-design,hexagonal-pattern,unity}.md
@@ -74,5 +74,5 @@ Executes the feature's steps — one `issues/<id>.md` per step — refusing to r
 - `disable-model-invocation: true` on `brainstorm`/`spec`/`implement` — they only run when explicitly invoked as `/brainstorm`, `/spec`, `/implement`, never auto-triggered by the model. `domain-modeling` deliberately does **not** carry this flag — that flag blocks even an explicit `Skill`-tool call from another skill, not just model auto-triggering, which would have broken `brainstorm`/`spec`'s ability to invoke it inline.
 - Feature state lives on disk under `.scratch/<feature>/`, never in conversation memory — any phase can resume cold.
 - `docs/adr/` at the project root holds this framework's own architectural decisions (e.g. `0001-per-step-issue-files.md`) — same mechanism `domain-modeling` uses for any project it's invoked in.
-- Adding a new house approach: drop a new file under `implementation-approaches/references/` and add a row to its router table once the approach has proven itself on real work.
+- Adding a new house approach: drop a new file under `architecture-patterns/references/` and add a row to its router table once the approach has proven itself on real work.
 - Adding a new diagram type: same pattern under `to-diagram/references/`.

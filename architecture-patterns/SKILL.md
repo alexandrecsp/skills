@@ -1,9 +1,9 @@
 ---
-name: implementation-approaches
-description: Index of house implementation approaches (frontend UI, API/interface design, hexagonal architecture, Unity). Use when writing a feature's design.md Approach section during /spec, or when implementing a step from its issues/<id>.md during /implement, and you need to know which house approach applies.
+name: architecture-patterns
+description: Index of house architecture patterns (frontend UI, API/interface design, hexagonal architecture, Unity). Use when writing a feature's design.md Approach section during /spec, or when implementing a step from its issues/<id>.md during /implement, and you need to know which house pattern applies.
 ---
 
-# Implementation Approaches
+# Architecture Patterns
 
 Router only. Each approach lives in its own file under `references/`, self-contained. Read the one that matches what you're about to build — don't read the others.
 
