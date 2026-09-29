@@ -9,6 +9,10 @@ Same per-step procedure as Sequential mode (implement per TDD judgment → valid
 5. **On a step's failure** (can't reach green after reasonable effort, or an unrecoverable implementation error): before stopping, the worker writes a short `## Quarantined` section into its own `issues/<id>.md` — the reason and its worktree/branch path — then the orchestrator leaves that worktree and branch in place, unmerged, and records it as failed. This file never gets squash-merged (the step failed), so the note stays visible only on the step's own unmerged branch, for whoever picks it up to debug manually. Do not block other steps in flight or later waves that don't depend on it.
 6. At the end of the run, report: which steps merged, which are quarantined (with their worktree path, branch, and what went wrong — pull this from each quarantined step's own `## Quarantined` note) for the user to resolve manually. If anything is quarantined, the spec-wide review still runs against whatever did merge — say so in the report.
 
+## A prototype block isn't a quarantine
+
+A step paused because `implement` dispatched `prototype` mid-step (see "When a step rests on an unsettled design question" in the main `SKILL.md`) is temporary and expected to resume — don't treat its worktree like a quarantined one (point 5 above). Everything else in the DAG that doesn't depend on it keeps scheduling normally in the meantime.
+
 ## Resuming
 
 At the start of a resumed `--parallel` run, sweep `.scratch/<feature>/worktrees/` first: any worktree whose step is already checked `[x]` in its `issues/<id>.md` is a leftover from an interrupted run (its cleanup in point 4 above never ran) — remove it with `git worktree remove` before starting new waves. Anything left over for a step still unchecked is genuinely quarantined; leave it for the failure report, not this sweep.

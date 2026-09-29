@@ -41,11 +41,21 @@ Before implementing a step, judge whether its referenced `scenarios` describe ge
 
 If a step you judged non-behavioral turns out to have real logic once you're in it, switch to red/green rather than finishing it untested — the judgment call is a starting guess, not a commitment.
 
+## When a step rests on an unsettled design question
+
+Before implementing a step, check whether its behavior actually depends on a state model or UI direction that `spec.md`/`design.md` gesture at but never nail down — an assumption wearing the clothes of a decision. Don't guess, and don't burn the step's own context arguing about it in place; dispatch the `prototype` skill as a subagent (via the Agent tool), handing it the one-sentence question. It works the question on its own branch, in isolation, and returns only the one-line answer and the branch name — none of the exploration that produced it.
+
+On return: write that answer, question, and branch name as a pointer into `design.md`'s Approach or Contracts section (`prototype` itself may also invoke `domain-modeling` for an ADR, if the decision cleared that bar), then resume the step with the answer in hand.
+
+**Sequential mode**: this only pauses the one blocked step; nothing else in this skill is running concurrently to hold up.
+
+**Parallel mode**: treat it like the existing quarantine mechanic (see [references/PARALLEL-MODE.md](./references/PARALLEL-MODE.md)) — that step's worktree waits without merging or being torn down, independent waves that don't depend on it keep moving, and the step resumes its own per-step procedure in the same worktree once `prototype` returns.
+
 ## Sequential mode (default)
 
 For each step whose `issues/<id>.md` is still unchecked, in dependency order:
 
-1. Implement the step per "TDD for behavioral steps" above, using `brief.md` instead of re-reading the full source docs. While writing code, let the relevant approach skill (`architecture-patterns`) trigger naturally — it auto-invokes based on what you're building.
+1. Implement the step per "TDD for behavioral steps" and "When a step rests on an unsettled design question" above, using `brief.md` instead of re-reading the full source docs. While writing code, let the relevant approach skill (`architecture-patterns`) trigger naturally — it auto-invokes based on what you're building.
 2. Once the step's own validation passes (green suite, or build/lint/typecheck for a non-behavioral step): flip that step's `- [ ] Done` to `- [x] Done` in its own `issues/<id>.md`, then commit by invoking the `commit` skill (automated-run exception applies — see that skill) — the flip goes in the same commit as the step's own work, not a separate one.
 
 No per-step review gate — see "Spec-wide review" below, which runs once after every step is done.
