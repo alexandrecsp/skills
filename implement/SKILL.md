@@ -51,6 +51,16 @@ On return: write that answer, question, and branch name as a pointer into `desig
 
 **Parallel mode**: treat it like the existing quarantine mechanic (see [references/PARALLEL-MODE.md](./references/PARALLEL-MODE.md)) — that step's worktree waits without merging or being torn down, independent waves that don't depend on it keep moving, and the step resumes its own per-step procedure in the same worktree once `prototype` returns.
 
+## When a step rests on a bug, not a design question
+
+Before implementing a step, also check whether it's blocked not by an undecided design question but by an actual defect — existing behavior that's wrong, standing in the way of the step rather than something nobody decided yet. Dispatch the `diagnosing-bugs` skill as a subagent (via the Agent tool), handing it the observed symptom. It builds its own red-capable feedback loop, diagnoses, fixes, and adds a regression test on its own footing, then returns with the fix in hand and the hypothesis that turned out correct.
+
+On return: resume the step with the fix already in place — the regression test it added counts toward the step's own validation, it isn't a separate thing to redo.
+
+**Sequential mode**: same as above — pauses only the one blocked step.
+
+**Parallel mode**: same quarantine mechanic as `prototype`'s (see [references/PARALLEL-MODE.md](./references/PARALLEL-MODE.md)) — that step's worktree waits without merging or being torn down, other waves keep moving, and the step resumes once `diagnosing-bugs` returns.
+
 ## Sequential mode (default)
 
 For each step whose `issues/<id>.md` is still unchecked, in dependency order:
