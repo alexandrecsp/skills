@@ -44,6 +44,7 @@ Executes the feature's steps — one `issues/<id>-<slug>.md` per step — refusi
 | `domain-modeling` | Shared write logic for `docs/GLOSSARY.md` and `docs/ADRS/`. Never auto-triggers or runs standalone — `brainstorm` and `spec` invoke it inline the moment a term or an ADR-worthy decision (hard to reverse, surprising, a real trade-off) resolves. Challenges fuzzy terms, confirms with the user, then writes immediately. `implement` reads these docs but never calls this skill. |
 | `to-diagram` | Builds a Mermaid diagram (sequence, C4, flowchart, or roadmap) from real codebase names only — never invented components. Identifies the type, confirms with the user, builds from the matching template (`sequence.md`, `c4.md`, `flowchart.md`, `roadmap.md`). Used internally by `spec` when a design needs a flow diagram. |
 | `architecture-patterns` | Router (not a skill invoked on its own) to house conventions for a given kind of work: `frontend-design.md`, `api-design.md`, `hexagonal-pattern.md`, `unity.md`. Consulted by `spec` when writing the Approach section and left to auto-trigger during `implement` while writing code. |
+| `tdd` | Red-green-refactor discipline (seam confirmation, anti-patterns, the loop's rules) for a single behavioral change. Standalone or invoked by `implement` for any step judged behavioral — the step's ordinary main line, not an escape hatch. |
 | `prototype` | Settles one unresolved design question (state model or UI direction) with throwaway code on a never-merged branch. Standalone (`/prototype`) or invoked by `implement` when a step depends on something `spec` never actually settled. |
 | `diagnosing-bugs` | Six-phase discipline for hard bugs and perf regressions: build a tight red-capable feedback loop first, then reproduce/minimise, hypothesise, instrument, fix with a regression test, clean up. Standalone (auto-triggers on "debug"/"broken"/"slow") or invoked by `implement` when a step is blocked by an actual defect rather than an unsettled design question. |
 | `research` | Delegates reading legwork to a background agent: investigates a question against primary sources only, writes cited findings to `docs/research/<slug>.md`. Auto-triggers when a topic needs investigating. |
@@ -70,6 +71,11 @@ Executes the feature's steps — one `issues/<id>-<slug>.md` per step — refusi
 │   ├── SKILL.md                              (router)
 │   └── references/
 │       └── {frontend-design,api-design,hexagonal-pattern,unity}.md
+├── tdd/
+│   ├── SKILL.md
+│   └── references/
+│       ├── TESTS.md
+│       └── MOCKING.md
 ├── prototype/SKILL.md
 ├── diagnosing-bugs/
 │   ├── SKILL.md

@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Implement phase of the spec-driven workflow. Executes a feature's issues/<id>-<slug>.md files step by step (or in parallel waves via git worktrees), following TDD where a step's behavior warrants it, then runs one holistic review of the whole spec before finishing.
+description: Implement phase of the spec-driven workflow. Executes a feature's issues/<id>-<slug>.md files step by step (or in parallel waves via git worktrees), delegating to `tdd` where a step's behavior warrants it, then runs one holistic review of the whole spec before finishing.
 disable-model-invocation: true
 ---
 
@@ -36,10 +36,10 @@ Point every step (and the spec-wide review at the end) at `brief.md` instead of 
 
 Before implementing a step, judge whether its referenced `scenarios` describe genuine observable behavior (business logic, a user-facing outcome, anything a Given/When/Then can meaningfully assert on) or whether the step is config/plumbing/infra with nothing behavioral to assert (wiring a dependency, adding a config key, a pure type/schema change with no logic). When genuinely unsure which it is, default to behavioral — a test that turns out to verify very little costs less than logic that ships with no test at all.
 
-- **Behavioral step → follow red/green**: write the test(s) for the step's scenario(s) first, run them and confirm they fail for the right reason (not a typo or missing import), then implement the minimum needed to make them pass, then run the full suite again to confirm green. Refactor only once green, keeping the suite green throughout.
+- **Behavioral step → call the Skill tool with `tdd`** before writing any code. It holds the red-green-refactor discipline (seam confirmation, anti-patterns, the loop's rules) this framework expects for every behavioral step — that discipline isn't restated here. Drive its loop against the step's own `scenarios`, then run the full suite once green.
 - **Non-behavioral step → skip TDD**: implement directly, then validate with the project's build/lint/typecheck from `brief.md`. Forcing a test-first cycle onto a step with no real behavior to assert produces a test that verifies nothing.
 
-If a step you judged non-behavioral turns out to have real logic once you're in it, switch to red/green rather than finishing it untested — the judgment call is a starting guess, not a commitment.
+If a step you judged non-behavioral turns out to have real logic once you're in it, switch to `tdd` rather than finishing it untested — the judgment call is a starting guess, not a commitment.
 
 ## When a step rests on an unsettled design question
 
@@ -65,7 +65,7 @@ On return: resume the step with the fix already in place — the regression test
 
 For each step whose `issues/<id>-<slug>.md` is still unchecked, in dependency order:
 
-1. Implement the step per "TDD for behavioral steps" and "When a step rests on an unsettled design question" above, using `brief.md` instead of re-reading the full source docs. While writing code, let the relevant approach skill (`architecture-patterns`) trigger naturally — it auto-invokes based on what you're building.
+1. Implement the step per "TDD for behavioral steps", "When a step rests on an unsettled design question", and "When a step rests on a bug, not a design question" above, using `brief.md` instead of re-reading the full source docs. While writing code, let the relevant approach skill (`architecture-patterns`) trigger naturally — it auto-invokes based on what you're building.
 2. Once the step's own validation passes (green suite, or build/lint/typecheck for a non-behavioral step): flip that step's `- [ ] Done` to `- [x] Done` in its own `issues/<id>-<slug>.md`, then commit by invoking the `commit` skill (automated-run exception applies — see that skill) — the flip goes in the same commit as the step's own work, not a separate one.
 
 No per-step review gate — see "Spec-wide review" below, which runs once after every step is done.
