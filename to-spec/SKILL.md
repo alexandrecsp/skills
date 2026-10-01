@@ -12,10 +12,12 @@ The issue tracker and triage label vocabulary should have been provided to you. 
 
 1. **Explore** the repo, if you haven't already, until you can name the modules the feature touches. Use the project's domain glossary vocabulary throughout, and respect any ADRs in the area. Note prefactoring opportunities for the slicing step.
 
-2. **Sketch the seams** at which you'll test the feature. Prefer existing seams to new ones, and the highest seam possible; the fewer seams across the codebase the better, ideally one. Propose any new seam at the highest point you can.
+2. **Judge the pattern** by calling the Skill tool with `architecture-patterns`. Continue once you hold the **verdict**: the pattern keys, or `none`, with a one-line why.
 
-3. **Check the seams** with the user. Continue once they confirm the seams match their expectations.
+3. **Sketch the seams** at which you'll test the feature. Prefer existing seams to new ones, and the highest seam possible; the fewer seams across the codebase the better, ideally one. Propose any new seam at the highest point you can.
 
-4. **Write and publish the spec** using [references/SPEC-TEMPLATE.md](references/SPEC-TEMPLATE.md), then publish it to the project issue tracker with the `ready-for-agent` triage label, no further triage. Continue once the spec has a tracker reference.
+4. **Check the seams and the verdict** with the user. Continue once they confirm both match their expectations.
 
-5. **Split into tickets** by reading [references/TICKETS.md](references/TICKETS.md) and following it through quiz and publish. Done when every ticket is published with its blocking edges and the spec as its parent.
+5. **Write and publish the spec** using [references/SPEC-TEMPLATE.md](references/SPEC-TEMPLATE.md), then publish it to the project issue tracker with the `ready-for-agent` triage label, no further triage. Continue once the spec has a tracker reference.
+
+6. **Split into tickets** by reading [references/TICKETS.md](references/TICKETS.md) and following it through quiz and publish. Done when every ticket is published with its blocking edges, a `Pattern` value (a key or an explicit `none`), and the spec as its parent.
