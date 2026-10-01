@@ -33,7 +33,7 @@ Pattern: hexagonal
 - **`Category:`**: `bug` or `enhancement`. Set by triage; optional elsewhere
 - **`Type:`**: `research`, `prototype`, `brainstorming` or `task`. Wayfinder tickets only
 - **`Blocked by:`**: ticket numbers (`01, 02`) or `None`. A ticket is **unblocked** when every ticket it lists is closed
-- **`Pattern:`**: architecture pattern(s) the ticket follows (keys from the `architecture-patterns` table, comma-separated), or `None`. Set by `to-tickets`. Optional; when absent, whoever implements the ticket judges via `architecture-patterns`
+- **`Pattern:`**: architecture pattern(s) the ticket follows (keys from the `architecture-patterns` table, comma-separated), or `None`. Set by `to-spec`. Optional; when absent, whoever implements the ticket judges via `architecture-patterns`
 
 ## Operations
 
