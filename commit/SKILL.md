@@ -1,70 +1,89 @@
 ---
 name: commit
-description: Split the working-tree changes into green commits (each one leaves the app building and its tests passing) and write each message as a verb-first headline stating the application's new state after applying it. Use when committing changes, writing a commit message, or when a workflow says to commit.
+description: Write commits whose message states the application's new state, under a gitmoji headline. Use when committing changes, writing a commit message, or when a workflow says to commit.
 ---
 
-Turn the working tree into a short series of **green** commits. Green means the application builds and its tests pass at that commit, so any commit can be checked out, reverted, or bisected on its own.
+A commit message answers one question: **after applying this commit, what is the new state of the application?**
 
 ## Process
 
 ### 1. Read the changes
 
-Run `git status`, `git diff` and `git diff --staged`. Read `git log --oneline -n 10` for the repo's message language and style. Write nothing from the user's description alone while the diff is available.
+Run `git status`, `git diff` and `git diff --staged`. Run `git log --oneline -n 10` for the repo's message language and style.
 
 Done when every changed file and hunk is accounted for.
 
 ### 2. Group into commits
 
-A group is one **effect**: one thing that is true after the commit and wasn't before. Order the groups so each stands on the ones before it:
+A group is one **effect**: one thing true after the commit that wasn't before. Each commit leaves the build and tests green, so any commit can be reverted or bisected alone.
 
-- Prefactoring comes before the feature it enables.
+- Prefactoring lands before the feature it enables.
 - Tests travel with the code they cover.
-- A rename, a move or a formatting change is its own group, apart from behaviour changes.
-- Groups that only work together (a signature change and its callers) merge into one; green outranks small.
+- A rename, move or formatting pass is its own group.
+- Changes that only work together (a signature and its callers) are one group.
 
-Stage each group by explicit path (`git add <paths>`). When hunks of one file belong to different groups, stage them non-interactively: trim a patch from `git diff <file>` and apply it with `git apply --cached`.
+Stage each group by explicit path (`git add <paths>`); split hunks of one file with `git apply --cached` on a trimmed patch.
 
-Done when the groups cover the whole diff and one sentence names each group's effect.
+Done when one sentence names each group's effect, and the groups cover the whole diff.
 
-### 3. Verify green, then commit, per group
+### 3. Write the message and commit
 
-For each group, in order:
+Per group, in order: write the message below, run the repo's fast checks (take the commands from `package.json`, Makefile or CI config), then commit. Report checks that cannot run here with the commit.
 
-1. Stage the group. Set the rest aside so the checks see only this commit (`git stash push --keep-index --include-untracked`).
-2. Run the repo's fast checks: typecheck, build, and the tests the group touches. Take the commands from the repo (`package.json` scripts, Makefile, CI config).
-3. Restore the rest (`git stash pop`).
-4. Write the message (below), then commit.
+Show the messages before committing. When a workflow invoked this skill with no one there to approve, that invocation is the approval: commit, and include each message verbatim in the report.
 
-A red group merges into its dependency and is checked again. Checks that cannot run here are reported to the user with the commit, never skipped silently.
-
-Done when every commit was checked green and `git status` shows nothing left over, or only what the user chose to keep out.
-
-### 4. Approve
-
-Show the messages before committing. When a workflow invoked this skill with no one there to approve mid-run (`implement`'s commit step), that invocation is the approval: commit, and include each message verbatim in the report.
+Done when `git status` shows nothing left over, or only what the user chose to keep out.
 
 ## The message
 
-The message answers one question: **after applying this commit, what is the new state of the application?**
+```
+<gitmoji> <Verb> <new state>
 
-**Headline**: one line, about 70 characters at most, that starts with a verb completing *"Ao aplicar este commit, ele…"* (*"If applied, this commit will…"*), and names the new state. Write the completion only, verb first, as an action the commit performs: the verb form that fits the sentence is third person present in Portuguese (`Altera`, `Corrige`, `Adiciona`) and imperative in English (`Change`, `Fix`, `Add`).
+- <concrete change>
+```
+
+**Headline**: one line, about 70 characters, opening with the gitmoji that fits the effect, then a verb completing *"If applied, this commit will…"* and naming what is now true of the application (the behaviour, the name, the rule), where the work that produced it stays out of the line. Imperative in English (`Fix`, `Add`); third person present in Portuguese (`Corrige`, `Adiciona`).
 
 | Instead of | Write |
 |---|---|
-| `Alteração de nome da variável X` | `Altera o nome da variável X para Y` |
-| `Corrigido bug no login` | `Corrige o login para aceitar e-mails com maiúsculas` |
-| `Fixed race condition` | `Fix race condition in session cleanup` |
+| `Fixed bug in login` | `🐛 Fix login to accept uppercase e-mails` |
+| `Variable rename` | `♻️ Rename variable X to Y` |
+| `Changes to session cleanup` | `🐛 Fix session cleanup releasing the same session twice` |
 
-Name what is now true of the application (the behaviour, the name, the rule), not the work that produced it.
-
-**Body**: optional. A blank line, then at most 5 bullets, most significant first, each one a concrete change. Fewer bullets are fine; the headline alone is fine when it says everything.
+**Body**: optional. A blank line, then at most 5 bullets, most significant first, each a concrete change to the application's state. The headline alone is fine when it says everything.
 
 **Language**: the language of the repo's `git log`; with no history, the language the user writes in.
 
-```
-Corrige a limpeza de sessões para não liberar a mesma sessão duas vezes
+### Gitmoji
 
-- Protege a remoção de sessões com um lock para requisições concorrentes
-- Adiciona teste de regressão que reproduz a intercalação que causava o crash
-- Registra em debug os IDs das sessões removidas
+One gitmoji per commit, the one naming its effect:
+
+| | Effect |
+|---|---|
+| ✨ | New feature |
+| 🐛 | Bug fix |
+| 🚑️ | Critical hotfix |
+| ♻️ | Refactor, same behaviour |
+| ⚡️ | Performance |
+| 💄 | UI and styling |
+| ✅ | Tests added or updated |
+| 📝 | Documentation |
+| 🔧 | Configuration |
+| 📦️ | Build, dependencies |
+| 👷 | CI |
+| 🔥 | Code or files removed |
+| 🚚 | Moved or renamed |
+| 🎨 | Structure or formatting |
+| 🔒️ | Security |
+| 💥 | Breaking change |
+| 🗃️ | Database |
+
+Anything outside the table: pick from [gitmoji.dev](https://gitmoji.dev).
+
+```
+🐛 Fix session cleanup releasing the same session twice
+
+- Guard session removal with a lock for concurrent requests
+- Add a regression test reproducing the interleaving that crashed
+- Log removed session IDs at debug level
 ```
