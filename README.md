@@ -9,8 +9,8 @@ A personal skills framework for [Claude Code](https://claude.com/claude-code), l
 ```
 /setup (once per repo)
 
-/brainstorm  →  /to-spec  →  /to-tickets  →  /implement
- or                                            or /implement-spec (parallel)
+/brainstorm  →  /to-spec  →  /implement
+ or                          or /implement --parallel
 /brainstorm-with-docs
 ```
 
@@ -33,10 +33,8 @@ The ticket format is defined once, in the repo's `docs/agents/issue-tracker.md` 
 | `setup` | Once per repo: writes `docs/agents/` (issue tracker, triage labels, domain-doc layout) and an `## Agent skills` block in `CLAUDE.md`/`AGENTS.md`. |
 | `brainstorm` | Thin wrapper: calls `brainstorming`. |
 | `brainstorm-with-docs` | Calls `brainstorming` and `domain-modeling`, so `CONTEXT.md` terms and ADRs are written as they crystallise. |
-| `to-spec` | Synthesises the conversation into `spec.md` (no interview). Agrees test seams with the user and records the architecture pattern(s) chosen. |
-| `to-tickets` | Splits a spec into tracer-bullet tickets, one file each, with `Blocked by:` edges and a `Pattern:` line. Wide refactors use expand–contract. |
-| `implement` | Builds a spec or tickets on branch `feat/<spec-name>`. Per ticket: claim, do the work, tick criteria, mark `resolved`. Uses `tdd`, follows the ticket's pattern, reviews with `code-review`, commits with `commit`. Resumable from ticket state. |
-| `implement-spec` | Orchestrates the whole spec: runs the ticket frontier as concurrent subagents in worktrees, merges each into an integration branch, then one review at the end. |
+| `to-spec` | Two phases, one checkpoint. Agrees test seams and the architecture pattern(s) with the user, then without further approval synthesises the conversation into `spec.md` (no interview) and splits it into tracer-bullet tickets, one file each, with `Blocked by:` edges and a `Pattern:` line. Wide refactors use expand–contract. Pass an existing spec path to start at the tickets. |
+| `implement` | Builds a spec or tickets on branch `feat/<spec-name>`. With `--parallel`, orchestrates the whole spec instead: runs the ticket frontier as concurrent subagents in worktrees, merges each into an integration branch, then one review at the end. Otherwise, per ticket: claim, do the work, tick criteria, mark `resolved`. Uses `tdd`, follows the ticket's pattern, reviews with `code-review`, commits with `commit`. Resumable from ticket state. |
 | `triage` | Moves issues through the triage state machine and writes agent-ready briefs. |
 | `wayfinder` | Plans work too big for one session as a map of decision tickets, resolved one at a time. |
 | `improve-codebase-architecture` | Finds deepening opportunities, presents an HTML report, then brainstorms the one you pick. |
@@ -48,7 +46,7 @@ The ticket format is defined once, in the repo's `docs/agents/issue-tracker.md` 
 |---|---|
 | `brainstorming` | The interview loop: asks every unblocked question of the design tree per round, each with a recommended answer, and sends sub-agents to look up facts. |
 | `domain-modeling` | Builds `CONTEXT.md` and ADRs (`docs/adr/`) while designing. |
-| `architecture-patterns` | Router to house patterns: hexagonal, API design, frontend UI, Unity. Consulted by `to-spec`, `to-tickets`, `implement` and review. |
+| `architecture-patterns` | Router to house patterns: hexagonal, API design, frontend UI, Unity. Consulted by `to-spec`, `implement` and review. |
 | `codebase-design` | Deep-module vocabulary: interfaces, seams, deepening. |
 | `tdd` | Red-green-refactor, with reference on tests and mocking. |
 | `diagnosing-bugs` | Feedback-loop-first debugging for hard bugs and regressions. |
@@ -65,8 +63,8 @@ The ticket format is defined once, in the repo's `docs/agents/issue-tracker.md` 
 ~/.claude/skills/
 ├── setup/  (+ references/)
 ├── brainstorm/  brainstorm-with-docs/  brainstorming/
-├── to-spec/  to-tickets/
-├── implement/  implement-spec/
+├── to-spec/  (+ references/)
+├── implement/  (+ references/)
 ├── triage/  (+ references/)   wayfinder/
 ├── tdd/  (+ references/)      diagnosing-bugs/  (+ scripts/)
 ├── code-review/  commit/  resolving-merge-conflicts/
