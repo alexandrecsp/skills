@@ -8,7 +8,7 @@ The solution to the problem, from the user's perspective.
 
 ## User Stories
 
-A LONG, numbered list of user stories, extremely extensive, covering all aspects of the feature. Each in the format:
+A LONG, numbered list of user stories, extensive enough to cover every aspect of the feature. Each in the format:
 
 1. As an <actor>, I want a <feature>, so that <benefit>
 
@@ -18,27 +18,32 @@ A LONG, numbered list of user stories, extremely extensive, covering all aspects
 
 ## Implementation Decisions
 
-A list of implementation decisions that were made. This can include:
+A list of the implementation decisions made:
 
 - The modules that will be built/modified
 - The interfaces of those modules that will be modified
 - Technical clarifications from the developer
-- Architectural decisions, including the architecture pattern(s) chosen from `architecture-patterns` with a one-line reason, or "none"
+- Architectural decisions
+- Pattern verdict: the `architecture-patterns` keys, or `none`, with a one-line why
 - Schema changes
 - API contracts
 - Specific interactions
 
+Describe modules and behaviour in prose; file paths and code snippets go stale quickly.
+
+Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it within the relevant decision and note briefly that it came from a prototype. Trim to the decision-rich parts: the important bits, not a working demo.
+
 ## Testing Decisions
 
-A list of testing decisions that were made. Include:
+A list of the testing decisions made:
 
-- A description of what makes a good test (only test external behavior, not implementation details)
+- What makes a good test: external behavior, not implementation details
 - Which modules will be tested
-- Prior art for the tests (i.e. similar types of tests in the codebase)
+- Prior art for the tests (similar types of tests in the codebase)
 
 ## Out of Scope
 
-A description of the things that are out of scope for this spec.
+The things that are out of scope for this spec.
 
 ## Further Notes
 
