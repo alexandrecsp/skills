@@ -9,10 +9,10 @@ Router only. Each approach lives in its own file under `references/`, self-conta
 
 | Key | Approach | File | Applies when |
 |---|---|---|---|
-| `frontend` | Frontend UI | [FRONTEND-DESIGN](./references/FRONTEND-DESIGN.md) | Building or modifying user-facing interfaces, components, layouts, accessibility, client-side state |
-| `api` | API & interface design | [API-DESIGN](./references/API-DESIGN.md) | Designing REST/GraphQL endpoints, module boundaries, public interfaces, idempotency |
-| `hexagonal` | Hexagonal architecture | [HEXAGONAL-PATTERN](./references/HEXAGONAL-PATTERN.md) | Structuring a service/feature into domain/application/ports/adapters, separating business rules from infrastructure |
-| `unity` | Unity | [UNITY](./references/UNITY.md) | Writing or reviewing Unity C#, gameplay systems, prefabs/ScriptableObjects, frame budget/performance |
+| `frontend` | Frontend UI | [FRONTEND-DESIGN.md](./references/FRONTEND-DESIGN.md) | Building or modifying user-facing interfaces, components, layouts, accessibility, client-side state |
+| `api` | API & interface design | [API-DESIGN.md](./references/API-DESIGN.md) | Designing REST/GraphQL endpoints, module boundaries, public interfaces, idempotency |
+| `hexagonal` | Hexagonal architecture | [HEXAGONAL-PATTERN.md](./references/HEXAGONAL-PATTERN.md) | Structuring a service/feature into domain/application/ports/adapters, separating business rules from infrastructure |
+| `unity` | Unity | [UNITY.md](./references/UNITY.md) | Writing or reviewing Unity C#, gameplay systems, prefabs/ScriptableObjects, frame budget/performance |
 
 ## Judging which pattern applies
 
