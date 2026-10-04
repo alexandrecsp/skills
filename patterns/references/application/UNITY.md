@@ -19,6 +19,11 @@ Unity projects fail in ways general software projects don't: garbage collection 
 - Configuring build pipelines or addressable/asset bundle strategy
 - Debugging stutters, memory growth, or scene load issues
 
+## When Not to Use
+
+- C# with no Unity dependency (a pure rules library); the frame-budget rules don't bind it
+- Editor-only tooling and build scripts that never run in play mode
+
 ## Core Architecture Patterns
 
 ### Favor composition over inheritance-heavy MonoBehaviours
@@ -181,28 +186,19 @@ Use the Unity Test Framework (UTF, formerly Unity Test Runner):
 | "We don't need tests, it's all visual/gameplay feel" | Damage formulas, inventory logic, save/load, and economy math are exactly the bugs that silently corrupt player progress — and are fully unit-testable. |
 | "Resources folder is easier than Addressables" | Easier at first, then every asset in `Resources/` ships in every build regardless of use, bloating size and load time. |
 
-## Red Flags
-
-- `GetComponent`, `Find*`, `Instantiate`/`Destroy`, LINQ, or string concatenation inside `Update`/`FixedUpdate`
-- Deep MonoBehaviour inheritance chains instead of composition
-- `GameManager.Instance` (or similar) referenced from more than a handful of unrelated systems
-- Scenes/prefabs committed as binary (Force Text not enabled) with no merge tooling configured
-- No `.gitignore` for `Library/`/`Temp/`, or binary assets not tracked via Git LFS
-- Gameplay logic that only exists inside `MonoBehaviour` methods, untestable without a running scene
-- Everything loaded via the `Resources` folder instead of Addressables
-- No profiling data behind a performance "optimization" — changes made on guesswork
-- One monolithic scene for the entire game instead of additive scene composition
-
 ## Verification
 
 After implementing or reviewing Unity code:
 
 - [ ] No allocations in `Update`/`FixedUpdate` hot paths (verified via Profiler, not assumption)
 - [ ] `GetComponent`/`Find*` calls are cached, not called per-frame
+- [ ] Behaviour is composed from small components, not deep MonoBehaviour inheritance chains
 - [ ] Systems communicate via events/interfaces, not a tangle of direct singleton references
 - [ ] Designer-tunable values live in ScriptableObjects, not hardcoded constants
 - [ ] Core gameplay logic is testable outside the Editor (EditMode tests exist and pass)
 - [ ] Scene/prefab serialization is Force Text with Smart Merge configured
 - [ ] `.gitignore`/Git LFS correctly exclude generated folders and track binary assets
 - [ ] Frequently spawned objects use pooling, not raw `Instantiate`/`Destroy`
+- [ ] Content loads through Addressables, not the `Resources` folder
+- [ ] The game is composed of additive scenes, not one monolithic scene
 - [ ] Profiler (CPU + Memory) and Frame Debugger were used to confirm any performance claim

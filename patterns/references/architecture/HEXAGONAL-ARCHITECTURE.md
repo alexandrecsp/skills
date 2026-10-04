@@ -1,16 +1,20 @@
-# Hexagon Engineering
+# Hexagonal Architecture
 
 ## Overview
 
-Hexagonal architecture isolates business rules from the infrastructure they run on, so the rules can be tested and reasoned about without booting a database, an HTTP client, or a framework. The payoff is not "swap the adapter" — most services never actually swap providers. The real payoff is a domain layer that fast, fake-backed unit tests can cover, and an infrastructure layer that integration tests can verify independently. Apply the pattern only where that split earns its ceremony; a thin CRUD wrapper around one table doesn't need it.
+Hexagonal architecture isolates business rules from the infrastructure they run on, so the rules can be tested and reasoned about without booting a database, an HTTP client, or a framework. The payoff is not "swap the adapter" — most services never actually swap providers. The real payoff is a domain layer that fast, fake-backed unit tests can cover, and an infrastructure layer that integration tests can verify independently.
 
 ## When to Use
 
 - Structuring a new service or feature that talks to external systems (APIs, message queues, third-party SDKs) alongside its own business rules
 - Reviewing code where business logic and infrastructure calls (Prisma, axios, an SDK client) live in the same class or function
-- Deciding whether a proposed ports-and-adapters split is proportionate to what the service actually does
 - Retrofitting an existing flat/layered module into ports and adapters
 - Writing tests for logic that currently requires mocking a database or HTTP client to exercise
+
+## When Not to Use
+
+- A thin CRUD wrapper around one table; use a lighter adapter-per-integration layout and say so explicitly
+- No domain logic worth protecting: if you can't name the rules the split would make testable (Principle 1), the split buys nothing
 
 ## Core Principles
 
@@ -80,28 +84,8 @@ Use-cases are atomic and touch ports directly; a use-case does one thing and is 
 
 ### 4. Domain entities and value objects are classes, not interfaces + free functions
 
-Model domain concepts (entities, value objects) as classes that own their data and their behavior — not a plain `interface`/`type` paired with free-standing functions that operate on it elsewhere in the module. A `Token` owns `isExpired()` as a method; it isn't a data shape handed to a bare `isExpired(token, now)` function living nearby:
+Inside `domain/`, entities and value objects are classes that own their data and behaviour, and constructors enforce invariants. The rule lives in the domain-model reference: [DOMAIN-MODEL.md](../domain/DOMAIN-MODEL.md), Principles 1 and 2; apply it to everything in `domain/`. DTOs at the adapters' edge stay plain types.
 
-```typescript
-// domain/token.ts
-export class Token {
-  constructor(
-    readonly accessToken: string,
-    readonly refreshToken: string,
-    readonly expiresAt: Date,
-    readonly refreshExpiresAt: Date | null,
-    readonly requiresManualReauth: boolean,
-  ) {}
-
-  isExpired(now = new Date()): boolean {
-    return this.expiresAt <= now;
-  }
-}
-```
-
-Constructors enforce invariants at creation (throw a domain error — see Principle 7 — if the state would be inconsistent), so an instance is always valid rather than a plain object anyone can construct in a bad shape. This keeps a rule and the state it governs in one place, instead of scattered across a data interface and whatever functions happen to import it.
-
-This is about `domain/` specifically, not the whole codebase: DTOs at the adapters' edge (request/response shapes with no behavior) stay plain types. A `type`/`interface` is also still fine for a genuine data-only value with zero behavior — the moment a rule (validation, derived state, a computation) attaches to that shape, it belongs in a class method, not a nearby exported function.
 
 ### 5. Ports are driven-only, until a second driving transport actually exists
 
@@ -147,7 +131,7 @@ export class GetValidTokenUseCase {
 
   async execute(): Promise<Token> {
     const current = await this.tokens.getToken();
-    if (current && !current.isExpired()) return current; // Token.isExpired(): domain method, see Principle 4
+    if (current && !current.isExpired()) return current; // Token.isExpired(): domain method, see DOMAIN-MODEL.md
     const refreshed = await this.oauth.refresh(current.refreshToken);
     await this.tokens.saveToken(refreshed);
     return refreshed;
@@ -157,23 +141,8 @@ export class GetValidTokenUseCase {
 
 ### 7. Domain errors are transport-agnostic; adapters translate them at the edge
 
-An error raised in `domain/` or `application/` represents a business failure and knows nothing about HTTP status codes, gRPC codes, or queue-retry semantics:
+Domain and application errors are business failures and carry no transport detail; the driving adapter translates them once, at its edge (an exception filter, an HTTP middleware, a queue handler's catch block). The rule lives in the domain-model reference: [DOMAIN-MODEL.md](../domain/DOMAIN-MODEL.md), Principle 3. This is what lets a use-case test assert on the domain error type directly.
 
-```typescript
-// domain/errors/manual-reauth-required.error.ts
-export class ManualReauthRequiredError extends Error {}
-```
-
-Translation to a transport-specific shape happens exactly once, at the driving adapter's edge (an exception filter, an HTTP middleware, a queue handler's catch block) — never inline in `domain/` or `application/`:
-
-```typescript
-// adapters/http/error.filter.ts
-if (err instanceof ManualReauthRequiredError) {
-  return res.status(401).json({ error: { code: 'MANUAL_REAUTH_REQUIRED', message: err.message } });
-}
-```
-
-This is what lets a use-case test assert on the domain error type directly, without asserting on an HTTP status code that has nothing to do with the business rule being tested.
 
 ### 8. Fakes for use-cases, integration tests for adapters
 
@@ -205,39 +174,21 @@ When a piece of infrastructure (a base HTTP client for a provider, a DB connecti
 | "One shared domain/ for the whole service keeps things consistent" | Invites unrelated features to share concepts that aren't actually shared, and blocks isolating one feature later (Principle 2). |
 | "We'll extract the shared client when the second feature needs it" | Extracting under pressure means touching every existing import at the worst time. Promote it now if the second consumer is already known (Principle 9). |
 | "Mocking Prisma/axios in the use-case test is fine, it's just for coverage" | A mock only proves the mock was called; a fake proves the port's actual contract. Mocking infra in a use-case test also usually means the port boundary isn't actually being used (Principle 8). |
-| "The exception can just carry an HTTP status, simpler than mapping later" | Once a domain error knows about HTTP, it can't be raised from a queue handler or CLI without dragging HTTP concepts along, and use-case tests start asserting on transport details instead of the business rule (Principle 7). |
-| "Interfaces + functions are simpler than classes, less boilerplate for domain types" | Splits data from the rules that govern it — anyone changing the rule has to know to go find the matching function elsewhere in the module. A class keeps invariant, state, and behavior together, is harder to construct into an invalid state, and is just as easy to fake in a use-case test (Principle 4). |
 | "This service is small, hexagonal is overkill" | Sometimes true — see Principle 1. Say so explicitly and use a lighter adapter-per-integration layout instead of adopting the pattern out of habit either way. |
 | "domain/ is small, doesn't need entities/value-objects/errors/services/events split out" | The five subfolders are fixed and cheap — even one file gets its own subfolder (`domain/entities/token.ts`), so the layout stays predictable across every feature regardless of size (Principle 3). |
 | "This logic doesn't call any ports, it can live in application/services/ next to the orchestration code" | If it doesn't touch a port, it isn't orchestration — it belongs in `domain/services/` as pure logic, testable without even a fake (Principle 3). |
 | "Repository and gateway cover every port we have" | They cover the two most common kinds, not all of them — coin a new suffix (publisher, clock, notifier...) that names what the port actually talks to, rather than stretching gateway to cover it (Principle 5). |
-
-## Red Flags
-
-- A use-case or domain class importing an ORM client, HTTP client, or SDK type directly
-- A domain entity/value object modeled as an `interface`/`type` with its behavior implemented as separate exported functions instead of class methods
-- A port interface with only one implementation and no plan for a second, modeled purely "because hexagonal" (fine if the reason is testability — not fine if no test exists that uses a fake)
-- A driving-side port/interface with exactly one implementation and no second driving transport anywhere in view
-- A service in `application/services/` that wraps exactly one use-case
-- Domain error classes that carry an HTTP status code or framework exception type
-- Use-case tests that mock an ORM/HTTP client instead of injecting a fake port
-- Adapter tests that mock the very dependency the adapter exists to wrap (nothing left to verify)
-- A single `domain/`/`ports/` shared across multiple unrelated features
-- Infrastructure known to serve a second feature soon, left feature-owned "until it's actually needed"
-- A domain entity, value object, error, service, or event file sitting loose in `domain/` instead of its dedicated subfolder
-- A `domain/services/*` file importing a port, a DI token, or the framework's DI decorators
-- A port file with no type suffix, or a suffix that doesn't name what it actually talks to (e.g. a `.gateway.port.ts` wrapping a database)
 
 ## Verification
 
 After structuring or reviewing a hexagonal boundary:
 
 - [ ] The actual driver (testability vs. provider churn vs. none) is named, not assumed
-- [ ] `domain/` has zero imports of the framework's infra APIs, an ORM client, or an SDK
-- [ ] Domain entities/value objects with any behavior (validation, derived state, computation) are classes with methods, not interfaces + free functions operating on them
+- [ ] `domain/` and use-cases have zero imports of the framework's infra APIs, an ORM client, or an SDK
+- [ ] The domain-model checklist in [DOMAIN-MODEL.md](../domain/DOMAIN-MODEL.md) passes for everything in `domain/`
 - [ ] Ports exist for the driven (outbound) side; driving (inbound) side only has a port if a second driving transport is real
+- [ ] Every port has a second implementation or a fake that a test uses; a port that exists "because hexagonal" has neither
 - [ ] Every use-case is atomic and 1:1-able with a driving action; every service composes 2+ use-cases (never fewer)
-- [ ] Domain errors carry no transport-specific detail; translation to the transport happens once, at the adapter edge
 - [ ] Use-case unit tests inject fakes of each port; adapter tests are integration tests against the real dependency or fixtures
 - [ ] Each feature owns its own `domain/application/ports/adapters`; cross-feature infrastructure lives in a shared location, not duplicated
 - [ ] Infrastructure with a known second consumer has already been promoted to the shared location

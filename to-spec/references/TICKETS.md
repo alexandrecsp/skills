@@ -15,7 +15,7 @@ Break the published spec into **tickets**: tracer-bullet vertical slices, each d
 
 Give each ticket its **blocking edges**: the other tickets that must complete before it can start. A ticket with no blockers can start immediately.
 
-Give each ticket its **pattern**: the slice of the spec's verdict that this ticket touches, as `architecture-patterns` keys, or `none` (prefactor and wide-refactor tickets are usually `none`).
+Give each ticket its **pattern**: the slice of the spec's verdict that this ticket touches, as `patterns` keys, or `none` (prefactor and wide-refactor tickets are usually `none`).
 
 **Wide refactors are the exception to vertical slicing.** A **wide refactor** is one mechanical change (rename a column, retype a shared symbol) whose **blast radius** fans across the whole codebase, so a single edit breaks thousands of call sites at once and no vertical slice can land green. Sequence it as **expand–contract**. First expand: add the new form beside the old so nothing breaks. Then migrate the call sites over in batches sized by blast radius (per package, per directory), each batch its own ticket blocked by the expand, keeping CI green batch to batch because the old form still exists. Finally contract: delete the old form once no caller remains, in a ticket blocked by every migrate batch. When even the batches can't stay green alone, keep the sequence but let them share an integration branch that all block a final integrate-and-verify ticket; green is promised only there.
 
@@ -53,7 +53,7 @@ The spec is each ticket's parent; leave it open and unmodified.
 
 **Blocked by:** the numbers/titles of the tickets that gate this one, or "None (can start immediately)".
 
-**Pattern:** the `architecture-patterns` keys, or `none`.
+**Pattern:** the `patterns` keys, or `none`.
 
 **Status:** ready-for-agent
 
@@ -74,7 +74,7 @@ The end-to-end behaviour this ticket makes work, from the user's perspective, no
 
 ## Pattern
 
-The `architecture-patterns` keys, or `none`.
+The `patterns` keys, or `none`.
 
 ## Acceptance criteria
 

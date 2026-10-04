@@ -35,7 +35,7 @@ Look for the originating spec, in this order:
 
 Anything in the repo that documents how code should be written, such as `CODING_STANDARDS.md` or `CONTRIBUTING.md`.
 
-The spec's and tickets' recorded pattern verdict is a standards source too: add the matching `architecture-patterns` reference files to the list. A recorded `none` adds nothing; judge through that skill only where no verdict is recorded at all.
+The spec's and tickets' recorded pattern verdict is a standards source too: add the matching `patterns` reference files to the list. A recorded `none` adds nothing; judge through that skill only where no verdict is recorded at all.
 
 On top of whatever the repo documents, the Standards axis always carries the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
 

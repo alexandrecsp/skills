@@ -1,4 +1,4 @@
-# Frontend UI Engineering
+# Frontend Design
 
 ## Overview
 
@@ -11,6 +11,11 @@ Build production-quality user interfaces that are accessible, performant, and vi
 - Implementing responsive layouts
 - Adding interactivity or state management
 - Fixing visual or UX issues
+
+## When Not to Use
+
+- Logic with no rendered output (reducers, data utilities, fetch helpers)
+- Backend or endpoint work with no UI; use API design
 
 ## Component Architecture
 
@@ -297,15 +302,6 @@ function useToggleTask() {
 | "This is just a prototype" | Prototypes become production code. Build the foundation right. |
 | "The AI aesthetic is fine for now" | It signals low quality. Use the project's actual design system from the start. |
 
-## Red Flags
-
-- Components with more than 200 lines (split them)
-- Inline styles or arbitrary pixel values
-- Missing error states, loading states, or empty states
-- No keyboard navigation testing
-- Color as the sole indicator of state (red/green without text or icons)
-- Generic "AI look" (purple gradients, oversized cards, stock layouts)
-
 ## Verification
 
 After building UI:
@@ -315,5 +311,7 @@ After building UI:
 - [ ] Screen reader can convey the page's content and structure
 - [ ] Responsive: works at 320px, 768px, 1024px, 1440px
 - [ ] Loading, error, and empty states all handled
-- [ ] Follows the project's design system (spacing, colors, typography)
+- [ ] Follows the project's design system (spacing, colors, typography), with no inline styles or arbitrary pixel values and no generic AI look (purple gradients, oversized cards, stock layouts)
+- [ ] State is never signalled by color alone (red/green carries text or an icon)
+- [ ] Components stay under ~200 lines; longer ones are split
 - [ ] No accessibility warnings in dev tools or axe-core

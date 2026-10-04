@@ -24,7 +24,7 @@ A list of the implementation decisions made:
 - The interfaces of those modules that will be modified
 - Technical clarifications from the developer
 - Architectural decisions
-- Pattern verdict: the `architecture-patterns` keys, or `none`, with a one-line why
+- Pattern verdict: the `patterns` keys, or `none`, with a one-line why
 - Schema changes
 - API contracts
 - Specific interactions

@@ -12,7 +12,7 @@ The issue tracker and triage label vocabulary should have been provided to you. 
 
 1. **Explore** the repo, if you haven't already, until you can name the modules the feature touches. Use the project's domain glossary vocabulary throughout, and respect any ADRs in the area. Note prefactoring opportunities for the slicing step.
 
-2. **Judge the pattern** by calling the Skill tool with `architecture-patterns`. Continue once you hold the **verdict**: the pattern keys, or `none`, with a one-line why.
+2. **Judge the pattern** by calling the Skill tool with `patterns`. Continue once you hold the **verdict**: the pattern keys, or `none`, with a one-line why.
 
 3. **Sketch the seams** at which you'll test the feature. Prefer existing seams to new ones, and the highest seam possible; the fewer seams across the codebase the better, ideally one. Propose any new seam at the highest point you can.
 
