@@ -26,8 +26,10 @@ Refactoring preserves behaviour, so the tests are the **tripwire**. Find the tes
 
 ## 4. Apply patterns
 
-Follow the `patterns` references the step 2 verdict names, and apply the moves one at a time, in the agreed order. Run the tripwire after each move; a red test reverts that move. Run typechecking regularly and the full test suite once at the end.
+Follow the `patterns` references the step 2 verdict names, and note the current commit as the **base**, then apply the moves one at a time, in the agreed order. Run the tripwire after each move; a red test reverts that move. Run typechecking regularly and the full test suite once at the end.
 
 ## 5. Close
 
-Use /code-review to review the work, then commit to the current branch with /commit. Report the side list to the user.
+Read [to-spec](../to-spec/SKILL.md) and run its step 5 to publish the spec /code-review measures against (the skill is user-invoked only, so the Skill tool refuses it). Feed it the step 2 agreement (problem, target shape with its pattern verdict, moves), so the review judges the work against what was agreed; the seams and verdict are already confirmed, and the moves are already applied, so the spec stands alone. Done when the spec has a tracker reference.
+
+Commit to the current branch with /commit, then run /code-review with the **base** as the fixed point and the spec reference as its spec. Fix what the review finds in follow-up commits. Report the side list to the user.
