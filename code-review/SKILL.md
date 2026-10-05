@@ -16,7 +16,7 @@ The issue tracker should have been provided to you. If `docs/agents/issue-tracke
 
 ### 1. Pin the fixed point
 
-Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, ask for it.
+Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one and the current branch is a spec branch (`spec/<spec-id>-<slug>`), the fixed point is its merge-base with the default branch. Otherwise ask for it.
 
 Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
 
@@ -27,9 +27,10 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 Look for the originating spec, in this order:
 
 1. A path or tracker reference the user passed as an argument, fetched via the workflow in `docs/agents/issue-tracker.md` when it is a reference.
-2. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched the same way.
-3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+2. The `<spec-id>` in a spec branch name, fetched the same way.
+3. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched the same way.
+4. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
+5. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
 
 ### 3. Identify the standards sources
 

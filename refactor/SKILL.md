@@ -4,7 +4,7 @@ description: "Refactor code around a stated problem: investigate, brainstorm the
 disable-model-invocation: true
 ---
 
-Refactor the code around the problem the user stated. The problem is the **focus**: every finding, question and change answers to it. What you notice outside it goes on a **side list** for step 5. If no focus was given, ask for one before anything else.
+Refactor the code around the problem the user stated. The problem is the **focus**: every finding, question and change answers to it. What you notice outside it goes on a **side list** for step 6. If no focus was given, ask for one before anything else.
 
 ## 1. Investigate
 
@@ -20,16 +20,22 @@ Put the patterns on the tree too: judge them through the `patterns` skill from w
 
 Done when the user confirms the shared understanding: a target shape with its pattern verdict, and a sequence of **moves**, each small enough to leave the tests green.
 
-## 3. Pin behaviour
+## 3. Publish the spec
+
+Read [to-spec](../to-spec/SKILL.md) and run its step 5 to publish the spec /code-review measures against (the skill is user-invoked only, so the Skill tool refuses it). Feed it the step 2 agreement (problem, target shape with its pattern verdict, moves); the seams and verdict are already confirmed. Done when the spec has a tracker reference.
+
+Then check out the **spec branch** (named in `implement`).
+
+## 4. Pin behaviour
 
 Refactoring preserves behaviour, so the tests are the **tripwire**. Find the tests that cover the focus; where a move would cross uncovered behaviour, write a **characterization test** first, using /tdd at the seams agreed in step 2. Done when every move has a test that goes red if it changes behaviour.
 
-## 4. Apply patterns
+## 5. Apply patterns
 
-Follow the `patterns` references the step 2 verdict names, and note the current commit as the **base**, then apply the moves one at a time, in the agreed order. Run the tripwire after each move; a red test reverts that move. Run typechecking regularly and the full test suite once at the end.
+Follow the `patterns` references the step 2 verdict names, then apply the moves one at a time, in the agreed order. Run the tripwire after each move; a red test reverts that move. Run typechecking regularly and the full test suite once at the end.
 
-## 5. Close
+## 6. Close
 
-Read [to-spec](../to-spec/SKILL.md) and run its step 5 to publish the spec /code-review measures against (the skill is user-invoked only, so the Skill tool refuses it). Feed it the step 2 agreement (problem, target shape with its pattern verdict, moves), so the review judges the work against what was agreed; the seams and verdict are already confirmed, and the moves are already applied, so the spec stands alone. Done when the spec has a tracker reference.
+Commit to the spec branch with /commit, then run /code-review on it, which measures against the spec from step 3. Fix what the review finds in follow-up commits. Report the side list to the user.
 
-Commit to the current branch with /commit, then run /code-review with the **base** as the fixed point and the spec reference as its spec. Fix what the review finds in follow-up commits. Report the side list to the user.
+Next: `/pr` to write the PR body.
