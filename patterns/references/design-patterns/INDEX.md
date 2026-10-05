@@ -8,10 +8,11 @@ Tactical patterns that usually sit inside an approach from the main router (a st
 | `command` | Command | [COMMAND.md](./COMMAND.md) | Requests as objects: one operation from several triggers, queue/schedule/retry, undo/redo, audit log |
 | `observer` | Observer | [OBSERVER.md](./OBSERVER.md) | One object's changes must notify an open or dynamic set of dependents: UI/gameplay events, temporary subscriptions |
 | `factory-method` | Factory Method | [FACTORY-METHOD.md](./FACTORY-METHOD.md) | Product type unknown until runtime or subclass-chosen, creation extended without editing its users, pooled/cached creation |
+| `state` | State | [STATE.md](./STATE.md) | Behaviour that varies with the object's current state, the same state `switch` repeated across methods, states with their own transitions |
 
 ## Telling them apart
 
-Only the keys in the table are valid; State, Template Method, Decorator and Mediator appear below as contrasts, not as options.
+Only the keys in the table are valid; Template Method, Decorator and Mediator appear below as contrasts, not as options.
 
 - **Strategy vs Command**: Strategy swaps alternative ways of doing one job; Command packages one request as an object to queue, log, or undo.
 - **Strategy vs State**: a strategy is chosen by the client and stays independent of the others; a state changes the context itself and states know each other.
