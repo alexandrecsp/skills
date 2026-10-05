@@ -76,7 +76,7 @@ Show counts and a one-line summary per item. Let the maintainer pick.
 4. **Brainstorm (if needed).** If the request needs fleshing out, call the Skill tool twice, for "brainstorm" and "domain-modeling", and brainstorm it into shape a round of questions at a time, sharpening domain terms and updating `GLOSSARY.md`/ADRs inline as decisions land.
 
 5. **Apply the outcome:**
-   - `ready-for-agent`: post an agent brief comment ([AGENT-BRIEF.md](references/AGENT-BRIEF.md)).
+   - `ready-for-agent`: post an agent brief comment ([AGENT-BRIEF.md](references/AGENT-BRIEF.md)), then name the next command: `/to-spec <issue ref>` for work big enough to split into tickets, `/implement <issue ref>` for a single slice.
    - `ready-for-human`: same structure as an agent brief, but note why it can't be delegated (judgment calls, external access, design decisions, manual testing).
    - `needs-info`: post triage notes (template below).
    - For `wontfix`, close the issue, with the comment depending on *why*:

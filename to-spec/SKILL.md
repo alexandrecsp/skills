@@ -21,3 +21,5 @@ The issue tracker and triage label vocabulary should have been provided to you. 
 5. **Write and publish the spec** using [references/SPEC-TEMPLATE.md](references/SPEC-TEMPLATE.md), then publish it to the project issue tracker with the `ready-for-agent` triage label, no further triage. Continue once the spec has a tracker reference.
 
 6. **Split into tickets** by reading [references/TICKETS.md](references/TICKETS.md) and following it through quiz and publish. Done when every ticket is published with its blocking edges, a `Pattern` value (a key or an explicit `none`), and the spec as its parent.
+
+Next: `/implement-spec <spec ref>`.
