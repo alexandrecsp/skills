@@ -1,6 +1,6 @@
 ---
 name: commit
-description: Write commits whose message states the application's new state, under a gitmoji headline. Use when committing changes, writing a commit message, or when a workflow says to commit.
+description: Write commits whose message states the application's new state, under a plain headline. Use when committing changes, writing a commit message, or when a workflow says to commit.
 ---
 
 A commit message answers one question: **after applying this commit, what is the new state of the application?**
@@ -37,51 +37,25 @@ Done when `git status` shows nothing left over, or only what the user chose to k
 ## The message
 
 ```
-<gitmoji> <Verb> <new state>
+<Verb> <new state>
 
 - <concrete change>
 ```
 
-**Headline**: one line, about 70 characters, opening with the gitmoji that fits the effect, then a verb completing *"If applied, this commit will…"* and naming what is now true of the application (the behaviour, the name, the rule), where the work that produced it stays out of the line. Imperative in English (`Fix`, `Add`); third person present in Portuguese (`Corrige`, `Adiciona`).
+**Headline**: one line, about 70 characters, opening with a verb completing *"If applied, this commit will…"* and naming what is now true of the application (the behaviour, the name, the rule), where the work that produced it stays out of the line. Imperative in English (`Fix`, `Add`); third person present in Portuguese (`Corrige`, `Adiciona`).
 
 | Instead of | Write |
 |---|---|
-| `Fixed bug in login` | `🐛 Fix login to accept uppercase e-mails` |
-| `Variable rename` | `♻️ Rename variable X to Y` |
-| `Changes to session cleanup` | `🐛 Fix session cleanup releasing the same session twice` |
+| `Fixed bug in login` | `Fix login to accept uppercase e-mails` |
+| `Variable rename` | `Rename variable X to Y` |
+| `Changes to session cleanup` | `Fix session cleanup releasing the same session twice` |
 
 **Body**: optional. A blank line, then at most 5 bullets, most significant first, each a concrete change to the application's state. The headline alone is fine when it says everything.
 
 **Language**: the language of the repo's `git log`; with no history, the language the user writes in.
 
-### Gitmoji
-
-One gitmoji per commit, the one naming its effect:
-
-| | Effect |
-|---|---|
-| ✨ | New feature |
-| 🐛 | Bug fix |
-| 🚑️ | Critical hotfix |
-| ♻️ | Refactor, same behaviour |
-| ⚡️ | Performance |
-| 💄 | UI and styling |
-| ✅ | Tests added or updated |
-| 📝 | Documentation |
-| 🔧 | Configuration |
-| 📦️ | Build, dependencies |
-| 👷 | CI |
-| 🔥 | Code or files removed |
-| 🚚 | Moved or renamed |
-| 🎨 | Structure or formatting |
-| 🔒️ | Security |
-| 💥 | Breaking change |
-| 🗃️ | Database |
-
-Anything outside the table: pick from [gitmoji.dev](https://gitmoji.dev).
-
 ```
-🐛 Fix session cleanup releasing the same session twice
+Fix session cleanup releasing the same session twice
 
 - Guard session removal with a lock for concurrent requests
 - Add a regression test reproducing the interleaving that crashed
