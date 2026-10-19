@@ -5,7 +5,7 @@ Spec-driven agent skills for Claude Code, packaged as an installable plugin. The
 ## Install
 
 ```
-/plugin marketplace add <path-or-git-url-of-this-repo>
+/plugin marketplace add alexandrecsp/skills
 /plugin install alper-skills@alper
 ```
 
