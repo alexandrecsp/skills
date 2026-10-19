@@ -21,6 +21,8 @@ Every `How` decision hangs off `What` decisions, so settle the `What` first. Whe
 
 Close each phase, once its frontier is empty, with a **summary** of its settled decisions as a short bulleted list. The `What` summary also lists the parked questions under **Parked for How**; the user's confirmation of it opens the `How`, with the parked questions in its first frontier.
 
+When the `How` opens, invoke the `design-patterns` skill. Each structural problem in the `How` is then a frontier question: recommend a pattern with its Where and Why, or no pattern when the problem doesn't call for one. The `How` summary lists the settled patterns as Pattern, Where and Why.
+
 ## Rounds
 
 Work each phase in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet, including answers to other questions in the same round. Ask the whole frontier in one round, then wait for the user's answers.
