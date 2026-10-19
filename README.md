@@ -23,9 +23,11 @@ The skills then show up as `/alper-skills:<name>`. Below they are written by the
 /to-tickets  ──────────────  milestones/NNN-<milestone>/ with tickets
         │
 /build  (once per milestone) ┐
+   ├─ branch <spec>/<milestone> from the base
    ├─ per ticket: sub-agent → tdd → commit
    ├─ check the milestone's "Done when"
-   └─ review-changes → fix  ┘
+   ├─ review-changes → fix
+   └─ open the PR → you squash-merge it ┘
 ```
 
 Each stage writes files the next one reads, and each ends by telling you the next command to run. You can stop between any two stages, or join partway through. For example, `/to-tickets` works on the current conversation without a spec, and `review-changes` works on any branch.
@@ -77,7 +79,7 @@ You review the breakdown (boundaries, granularity, dependencies) until you appro
 ├── spec.md
 └── milestones/
     └── NNN-<milestone-slug>/
-        ├── milestone.md
+        ├── milestone.md        ← Delivers, Done when, PR: <url>
         └── NNN-<ticket-slug>.md   ← Status: todo | done, Commit: <sha>, Depends on, Notes
 ```
 
@@ -85,12 +87,36 @@ You review the breakdown (boundaries, granularity, dependencies) until you appro
 
 Builds **one milestone per run**:
 
-1. It picks the earliest milestone that still has `todo` tickets.
-2. For each ticket, in order, it starts a fresh **implementer sub-agent**. That sub-agent reads the ticket, the milestone, the spec, and the notes and commits of earlier tickets. It builds the ticket with `tdd` (red, then green, at the ticket's seams) and commits with `commit`. Then it marks the ticket `done` with its SHA and leaves notes for the next ticket.
-3. It runs the full suite and the milestone's **Done when** check.
-4. It runs `review-changes` over the milestone's whole diff. Spec findings and hard violations are fixed automatically. You choose which judgement calls to fix.
+1. It picks the earliest milestone that still has `todo` tickets. It stops when the previous milestone's PR is not merged yet.
+2. It checks out the milestone's own branch, `sdd/<spec-folder>/<milestone-folder>`, created from the up-to-date base branch. The working tree must be clean.
+3. For each ticket, in order, it starts a fresh **implementer sub-agent**. That sub-agent reads the ticket, the milestone, the spec, and the notes and commits of earlier tickets. It builds the ticket with `tdd` (red, then green, at the ticket's seams) and commits with `commit`. Then it marks the ticket `done` with its SHA and leaves notes for the next ticket.
+4. It runs the full suite and the milestone's **Done when** check.
+5. It runs `review-changes` over the milestone's whole diff, from the branch's merge-base with the base. Every finding is fixed automatically in one pass, with no second review. It stops to ask you only about findings flagged **escalate**: fixes that would contradict an ADR, change a public interface or a named seam, or need the spec itself changed.
+6. After you confirm, it pushes the branch and opens a PR, recording its URL in `milestone.md`.
 
-Run `/build` again for the next milestone. Because progress lives in the ticket files, a build that stops can pick up where it left off.
+Squash-merge the PR, then run `/build` again for the next milestone. Because progress lives in the ticket files, a build that stops can pick up where it left off.
+
+#### Branches and merging
+
+```mermaid
+gitGraph
+  commit id: "base"
+  branch "sdd/003-invoice-export/001-csv-writer"
+  commit id: "ticket 001"
+  commit id: "ticket 002"
+  commit id: "review fixes"
+  checkout main
+  commit id: "FUNC-12: Adds CSV export" type: HIGHLIGHT
+  branch "sdd/003-invoice-export/002-email-delivery"
+  commit id: "ticket 003"
+  commit id: "ticket 004"
+  checkout main
+  commit id: "FUNC-12: Emails invoice exports" type: HIGHLIGHT
+```
+
+Each milestone is one branch, one PR and, after a **squash merge**, one commit on the base branch. The highlighted commits are the squash merges: the next milestone branches from the base only after the previous one lands. The PR's title and body follow the `commit` format, so set the repository's squash commit message to the pull request title and description. After the merge, a ticket's **Commit** names a commit that only the PR still holds. Later tickets that build on it read the milestone's PR diff instead.
+
+Every pipeline branch starts with `sdd/`, so `git branch --list 'sdd/*'` finds them all for cleanup. To have GitHub delete each one when its PR merges, turn on **Automatically delete head branches** in the repository settings; `git fetch --prune` then drops the remote-tracking refs locally.
 
 ## Skills used along the way
 

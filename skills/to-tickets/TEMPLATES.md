@@ -8,6 +8,8 @@ Replace each guidance line with its content. Use the glossary's terms. Describe 
 **Delivers:** the increment this milestone makes work, from the user's perspective.
 
 **Done when:** a check the builder can run that proves the increment works once its last ticket lands: a test at a seam the spec names, or a command and its expected output.
+
+**PR:** none
 ```
 
 ## NNN-<ticket-slug>.md
