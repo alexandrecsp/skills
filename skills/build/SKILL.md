@@ -13,15 +13,15 @@ Talk to sub-agents through **context pointers**: the paths of the ticket, its `m
 
 ## Process
 
-1. **Pick the milestone.** With a milestone folder, take it. With a spec folder, or without an argument the spec folder from this conversation, take the lowest-numbered milestone that holds a ticket whose **Status** is `todo`. Milestones run in order: when an earlier milestone still holds a `todo` ticket, report it and stop; when every ticket is `done`, report that the spec is built and stop. Done when you can name the milestone and its `todo` tickets.
+1. **Pick the milestone.** With a milestone folder, take it. With a spec folder, or without an argument the spec folder from this conversation, take the lowest-numbered milestone that holds a ticket whose **Status** is not `done`. Milestones run in order: when an earlier milestone still holds such a ticket, report it and stop; when every ticket is `done`, report that the spec is built and stop. Done when you can name the milestone and its tickets that are not `done`.
 
 2. **Pin the fixed point**, the commit the review diffs against: `HEAD` when none of this milestone's tickets is done yet, otherwise the parent of the lowest-numbered done ticket's **Commit** (`<sha>^`). Done when `git rev-parse` resolves it.
 
-3. **Build the tickets.** Take the `todo` tickets in number order: each builds only on the tickets before it. For each, dispatch one implementer sub-agent, in the foreground, with the paths of the ticket, `milestone.md` and `spec.md`, and this brief:
+3. **Build the tickets.** Take the tickets that are not `done` in number order: each builds only on the tickets before it. For each, set its **Status** to `doing`, then dispatch one implementer sub-agent, in the foreground, with the paths of the ticket, `milestone.md` and `spec.md`, and this brief:
 
    > Build this ticket. First read the earlier tickets in its milestone folder and the tickets its **Depends on** names, their Notes, and the commits their **Commit** lines name. Invoke the `tdd` skill, testing at the seams the ticket's acceptance criteria name; when a criterion names no seam, report that instead of choosing one. Build its Design patterns rows at their Where. Run the typechecker and the test files you touch as you go, and the full suite before you finish. Then fill the ticket's Notes with what its diff can't show the next ticket (decisions the ticket left open, departures from it, gotchas you hit) in a few bullets, or "None". Commit everything by invoking the `commit` skill with the spec folder. Then write the commit's SHA into the ticket's **Commit** line and set its **Status** to `done`. Report the commit, and anything you could not build.
 
-   When a sub-agent could not build its ticket, report that to the user and stop: the tickets after it may depend on it. Done when every ticket in the milestone is `done` and committed.
+   When a sub-agent could not build its ticket, set its **Status** to `blocked`, report that to the user and stop: the tickets after it may depend on it. Done when every ticket in the milestone is `done` and committed.
 
 4. **Check the increment.** Run the full suite and the check in `milestone.md`'s **Done when**. When either fails, dispatch an implementer sub-agent with the failure, then run both again. After two failed fixes, report the failure to the user and stop. Done when both pass.
 
