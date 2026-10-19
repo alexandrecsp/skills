@@ -1,11 +1,13 @@
 ---
 name: domain-modeling
-description: Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a GLOSSARY.md, or recording or editing an ADR.
+description: Build and sharpen a project's domain model. Use when discussing codebase terminology, editing a GLOSSARY.md, or recording an ADR.
+metadata:
+  type: process
 ---
 
 # Domain Modeling
 
-Actively build and sharpen the project's domain model as you design. This is the *active* discipline: challenging terms, inventing edge-case scenarios, and writing the glossary and decisions down the moment they crystallise. (Merely *reading* `GLOSSARY.md` for vocabulary is not this skill: that's a one-line habit any skill can do. This skill is for when you're changing the model, not just consuming it.)
+Actively build and sharpen the project's domain model as you design: challenge terms, invent edge-case scenarios, and write the glossary and decisions down the moment they crystallise.
 
 ## File structure
 
@@ -21,7 +23,7 @@ Most repos have a single context:
 └── src/
 ```
 
-If a `GLOSSARY-MAP.md` exists at the root, the repo has multiple contexts. The map points to where each one lives:
+If a `GLOSSARY-MAP.md` exists at the root, the repo has multiple contexts. The map points to where each one lives (its format is in [GLOSSARY-FORMAT.md](./GLOSSARY-FORMAT.md)):
 
 ```
 /
@@ -37,7 +39,9 @@ If a `GLOSSARY-MAP.md` exists at the root, the repo has multiple contexts. The m
 │       └── docs/adr/
 ```
 
-Create files lazily: only when you have something to write. If no `GLOSSARY.md` exists, create one when the first term is resolved. If no `docs/adr/` exists, create it when the first ADR is needed.
+With multiple contexts, infer which one the current topic belongs to; if unclear, ask. A decision that binds one context goes in that context's `docs/adr/`; one that spans contexts goes in the root `docs/adr/`.
+
+Create files lazily: only when you have something to write. If no `GLOSSARY.md` exists, create a root one when the first term is resolved. If the target `docs/adr/` doesn't exist, create it when its first ADR is needed.
 
 ## During the session
 
@@ -59,9 +63,9 @@ When the user states how something works, check whether the code agrees. If you 
 
 ### Update GLOSSARY.md inline
 
-When a term is resolved, update `GLOSSARY.md` right there. Don't batch these up: capture them as they happen. Use the format in [GLOSSARY-FORMAT.md](./GLOSSARY-FORMAT.md).
+When a term is resolved, update `GLOSSARY.md` right there, as it happens. Use the format in [GLOSSARY-FORMAT.md](./GLOSSARY-FORMAT.md).
 
-`GLOSSARY.md` should be totally devoid of implementation details. Do not treat `GLOSSARY.md` as a spec, a scratch pad, or a repository for implementation decisions. It is a glossary and nothing else.
+`GLOSSARY.md` holds the domain's terms and their definitions, nothing else: implementation decisions belong in ADRs or the spec.
 
 ### Offer ADRs sparingly
 
@@ -72,3 +76,7 @@ Only offer to create an ADR when all three are true:
 3. **The result of a real trade-off**: there were genuine alternatives and you picked one for specific reasons
 
 If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](./ADR-FORMAT.md).
+
+## Done
+
+Done when every term the session settled is in its `GLOSSARY.md`, and every decision that passed the three tests has been offered as an ADR. When this skill runs beside another (such as `brainstorm`), check this before that skill's session ends.

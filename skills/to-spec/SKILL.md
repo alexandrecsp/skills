@@ -1,14 +1,16 @@
 ---
 name: to-spec
-description: "Turn the current conversation into a spec saved under .scratch/specs/: no interview, just synthesis of what you've already discussed."
+description: "Turn the current conversation into a spec saved under .scratch/specs/, synthesised from what you've already discussed."
 disable-model-invocation: true
+metadata:
+  type: process
 ---
 
-Turn the current conversation and your understanding of the codebase into a spec. This is **synthesis**: every decision in the spec comes from what the user has already said, apart from the seams, and the patterns when the conversation never weighed them, which you propose and the user confirms. When the conversation left a decision open, record it as an open question under Further Notes; the spec states only what was settled.
+Turn the current conversation and your understanding of the codebase into a spec. This is **synthesis**: the spec states only what the conversation settled. You propose two things for the user to confirm: the seams, and the pattern choices when the conversation never weighed patterns. A decision the conversation left open goes under Further Notes as an open question.
 
 ## Process
 
-1. **Explore.** Read the code the feature touches, unless you already have, plus `GLOSSARY.md` and the ADRs under `docs/adr/` when present. Write the spec in the glossary's terms and within the ADRs' decisions; without them, use the terms the conversation settled. Done when you can name every module the feature builds or changes.
+1. **Explore.** Read the code the feature touches, unless you already have, plus the **domain docs** when present: `GLOSSARY.md` and the ADRs in `docs/adr/`; when a `GLOSSARY-MAP.md` exists, the root ADRs plus the `GLOSSARY.md` and `docs/adr/` of each context the feature touches. Write the spec in the glossary's terms and within the ADRs' decisions; without them, use the terms the conversation settled. Done when you can name every module the feature builds or changes.
 
 2. **Sketch the seams.** Pick the seams where tests will prove the feature works. Prefer existing seams to new ones, and the highest seam that still reaches the behaviour; propose a new seam at the highest point you can. Fewer is better; one is ideal. Done when every behaviour discussed is reachable from a listed seam.
 
@@ -16,4 +18,4 @@ Turn the current conversation and your understanding of the codebase into a spec
 
 4. **Confirm.** Show the user the seams, plus any pattern choices you made in step 3, and wait. Done when the user confirms them.
 
-5. **Write the spec.** Save it as `spec.md` in a new spec folder, `.scratch/specs/NNN-<slug>/`: `NNN` is one past the highest folder number already there (starting at `001`), and `<slug>` is the spec title in kebab-case. Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md). Done when every section is filled from the conversation and the user has the spec's path.
+5. **Write the spec.** Save it as `spec.md` in a new spec folder, `.scratch/specs/NNN-<slug>/`: `NNN` is one past the highest folder number already there (starting at `001`), and `<slug>` is the spec title in kebab-case. Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md). Done when every section is filled from the conversation, and the user has the spec's path and the next step, `/to-tickets <spec-folder>`.

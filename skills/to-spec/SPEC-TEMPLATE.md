@@ -36,7 +36,7 @@ The implementation decisions that were made, such as:
 - API contracts
 - Specific interactions
 
-Describe modules and interfaces by name and behaviour; file paths and code snippets go stale. The one exception is a snippet a prototype produced that states a decision more precisely than prose (a state machine, reducer, schema, or type shape): inline it in the decision it encodes, trimmed to the decision-rich parts, and note that it came from a prototype.
+Describe modules and interfaces by name and behaviour; file paths and code snippets go stale.
 
 ## Testing Decisions
 

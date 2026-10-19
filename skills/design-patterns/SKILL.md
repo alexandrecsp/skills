@@ -1,6 +1,6 @@
 ---
 name: design-patterns
-description: The catalogue of design patterns, with the rules for choosing one. Use when designing or reviewing code, or deciding whether a problem calls for a pattern.
+description: Design patterns and the rules for choosing one. Use when deciding whether a problem calls for a pattern, or recording a pattern choice.
 metadata:
   type: reference
 ---

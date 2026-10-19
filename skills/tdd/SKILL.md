@@ -1,13 +1,13 @@
 ---
 name: tdd
-description: Test-driven development, one red-green slice at a time. Use when the user wants to build a feature or fix a bug test-first, or wants integration tests.
+description: Test-driven development, red then green. Use when the user wants work built test-first, or wants integration tests.
 metadata:
   type: process
 ---
 
-TDD is the **red → green** loop. This skill makes that loop produce tests worth keeping. Every section applies on every cycle, so consult them before and during the loop.
+TDD is the **red → green** loop. This skill makes that loop produce tests worth keeping.
 
-Read `GLOSSARY.md` and the ADRs under `docs/adr/` when present: test names and interface vocabulary use the glossary's terms, and the code stays within the ADRs' decisions.
+Read the **domain docs** when present: `GLOSSARY.md` and the ADRs in `docs/adr/`; when a `GLOSSARY-MAP.md` exists, the root ADRs plus the `GLOSSARY.md` and `docs/adr/` of each context the work touches. Test names and interface vocabulary use the glossary's terms, and the code stays within the ADRs' decisions.
 
 ## What a good test is
 
@@ -15,10 +15,10 @@ A good test verifies behaviour through a public interface and reads like a speci
 
 ## Seams: where tests go
 
-A **seam** is the public boundary you test at: the interface where you observe behaviour without reaching inside. Tests live at **confirmed seams** only, which puts the testing effort on the critical paths and complex logic rather than on every edge case.
+A **seam** is where a module's interface lives, as the `codebase-design` skill defines it: tests cross it and observe behaviour without reaching inside. Tests live at **confirmed seams** only, which puts the testing effort on the critical paths and complex logic rather than on every edge case.
 
 - When a spec or ticket names the seams (its Testing Decisions or acceptance criteria), they are already confirmed: test there.
-- Otherwise, before writing any test, propose the seams, each with a one-line note on what it catches and what it misses, and wait for the user to confirm them.
+- Otherwise, before writing any test, propose the seams, each with a one-line note on what it catches and what it misses, and wait for the user to confirm them. As a sub-agent with no user to ask, report the seams you would propose instead of choosing them.
 
 When the shape of the interface is itself in question (how deep the module is, where the seam belongs, what the interface exposes), invoke the `codebase-design` skill for the vocabulary and principles.
 
@@ -33,6 +33,7 @@ When the shape of the interface is itself in question (how deep the module is, w
 - **Red first.** Write one failing test, run it, and watch it go red for the reason you expect. A test that fails for another reason, or passes, proves nothing yet.
 - **Then green.** Write only enough code to pass it, then run the test again.
 - **One slice at a time.** One seam, one test, one minimal implementation per cycle.
-- **Refactor at review.** Refactoring belongs to the `code-review` skill's findings, outside the red → green cycle.
+- **One logical assertion per test.**
+- **Refactor at review.** Refactoring belongs to the `code-review` skill's findings, outside the red → green cycle. When nothing will review the work afterwards (`build` reviews each milestone), end by offering the user a `code-review` of the changes.
 
 The loop is done when every behaviour in scope has a test at a confirmed seam that went red, then green, and the full suite passes.

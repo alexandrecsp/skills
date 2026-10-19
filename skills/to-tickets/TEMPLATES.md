@@ -1,4 +1,4 @@
-Replace each guidance line with its content. Use the glossary's terms. Describe behaviour and modules by name; file paths and code snippets go stale. The one exception is a snippet a prototype produced that states a decision more precisely than prose (a state machine, reducer, schema, or type shape): inline it, trimmed to the decision-rich parts, and note that it came from a prototype.
+Replace each guidance line with its content. Use the glossary's terms. Describe behaviour and modules by name; file paths and code snippets go stale.
 
 ## milestone.md
 
@@ -7,7 +7,7 @@ Replace each guidance line with its content. Use the glossary's terms. Describe 
 
 **Delivers:** the increment this milestone makes work, from the user's perspective.
 
-**Done when:** the check that proves the increment works once its last ticket lands: a demo, or a test at a seam the spec names.
+**Done when:** a check the builder can run that proves the increment works once its last ticket lands: a test at a seam the spec names, or a command and its expected output.
 ```
 
 ## NNN-<ticket-slug>.md
@@ -16,8 +16,6 @@ Replace each guidance line with its content. Use the glossary's terms. Describe 
 # Ticket NNN: <Ticket title>
 
 **Milestone:** NNN <Milestone title>
-
-**Blocked by:** the number and title of each ticket in this milestone that gates this one, or "None (can start immediately)".
 
 **Status:** todo
 
@@ -31,12 +29,10 @@ The spec's Design Patterns rows this ticket implements, copied as they are, or "
 
 ## Acceptance criteria
 
-- [ ] A behaviour a test at a named seam can prove
+- [ ] <behaviour>, proven at <seam>
 - [ ] ...
 
 ## Notes
 
 Left empty; the agent that builds this ticket fills it.
 ```
-
-Set **Status** to `done` when the ticket lands.

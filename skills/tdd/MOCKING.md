@@ -1,4 +1,4 @@
-Mock at **system boundaries** only:
+Mock only what you don't control or can't run in the test:
 
 - External APIs (payment, email)
 - Time and randomness
@@ -6,9 +6,9 @@ Mock at **system boundaries** only:
 
 Everything you control, your own modules and their internal collaborators, runs for real in the test.
 
-## Designing the boundary for mocking
+## Designing a mocked dependency
 
-Inject each boundary dependency rather than creating it inside, as the `codebase-design` skill's testability rules describe. Then give the boundary an **SDK-style interface**: one function per external operation, rather than one generic fetcher.
+Inject each mocked dependency rather than creating it inside, as the `codebase-design` skill's testability rules describe. Then give it an **SDK-style interface**: one function per external operation, rather than one generic fetcher.
 
 ```typescript
 // GOOD: each function is independently mockable

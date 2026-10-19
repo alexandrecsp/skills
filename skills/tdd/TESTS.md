@@ -54,5 +54,3 @@ test("calculateTotal sums line items", () => {
   expect(calculateTotal(items)).toBe(expected);
 });
 ```
-
-Keep one logical assertion per test.

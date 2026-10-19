@@ -1,6 +1,6 @@
 ---
 name: codebase-design
-description: The deep-module vocabulary (module, interface, depth, seam, adapter) and the principles for shaping modules. Use when designing or deepening a module's interface, deciding where a seam goes, or making code more testable.
+description: Deep-module vocabulary and the principles for shaping modules. Use when designing or deepening a module's interface, deciding where a seam goes, or making code more testable.
 metadata:
   type: reference
 ---
