@@ -19,6 +19,10 @@ Replace each guidance line with its content. Use the glossary's terms. Describe 
 
 **Status:** todo
 
+**Depends on:** the lower-numbered tickets this one builds on directly, as `NNN, NNN`, or "None".
+
+**Commit:** none
+
 ## What to build
 
 The end-to-end behaviour this ticket makes work, from the user's perspective, rather than a layer-by-layer implementation list.

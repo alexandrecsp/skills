@@ -1,12 +1,14 @@
 ---
 name: to-spec
-description: "Turn the current conversation into a spec saved under .scratch/specs/, synthesised from what you've already discussed."
+description: "Turn the current conversation into a spec saved under .sdd/specs/, synthesised from what you've already discussed."
 disable-model-invocation: true
 metadata:
   type: process
 ---
 
 Turn the current conversation and your understanding of the codebase into a spec. This is **synthesis**: the spec states only what the conversation settled. You propose two things for the user to confirm: the seams, and the pattern choices when the conversation never weighed patterns. A decision the conversation left open goes under Further Notes as an open question.
+
+This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setup-repository` and stop.
 
 ## Process
 
@@ -16,6 +18,6 @@ Turn the current conversation and your understanding of the codebase into a spec
 
 3. **Record patterns.** Take the pattern choices the conversation settled, including a decision that none is needed. When the conversation never weighed patterns, invoke the `design-patterns` skill and choose them by its rules. Done when each choice has its Pattern, Where and Why, or the spec states that none is needed.
 
-4. **Confirm.** Show the user the seams, plus any pattern choices you made in step 3, and wait. Done when the user confirms them.
+4. **Confirm.** Show the user the seams, plus any pattern choices you made in step 3, and, when `.sdd/settings.json` sets a `commitKeyPattern`, ask for the spec's **key**, the optional prefix every commit for this spec carries (such as `FUNC-1234`). Done when the user confirms them and gives a key that fully matches the pattern, or none.
 
-5. **Write the spec.** Save it as `spec.md` in a new spec folder, `.scratch/specs/NNN-<slug>/`: `NNN` is one past the highest folder number already there (starting at `001`), and `<slug>` is the spec title in kebab-case. Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md). Done when every section is filled from the conversation, and the user has the spec's path and the next step, `/to-tickets <spec-folder>`.
+5. **Write the spec.** Save it as `spec.md` in a new spec folder, `.sdd/specs/NNN-<slug>/`: `NNN` is one past the highest folder number already there (starting at `001`), and `<slug>` is the spec title in kebab-case. Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md). Done when every section is filled from the conversation, and the user has the spec's path and the next step, `/to-tickets <spec-folder>`.

@@ -17,7 +17,7 @@ Each axis runs in its own sub-agent, so neither pollutes the other's context, an
 
 1. **Pin the fixed point.** Take the one the user gave (a commit SHA, branch, tag, `main`, `HEAD~5`). Given a PR, check that the working tree is clean, check out its branch (`gh pr checkout <number>`), and take its base branch as the fixed point. Without either, ask. Check that it resolves (`git rev-parse <fixed-point>`) and that `git diff <fixed-point>...HEAD` (three dots, against the merge-base) is non-empty, so a bad ref fails here rather than inside two sub-agents. Done when you hold the diff command and the commit list from `git log <fixed-point>..HEAD --oneline`.
 
-2. **Find the spec.** Take the path the user gave: a spec folder, a milestone folder, or a ticket file. Otherwise, look under `.scratch/specs/` for the spec folder whose slug matches the branch name or the commit messages, and the tickets the commits name. Without either, ask the user; when there is none, the Spec axis is skipped. Done when you know what the diff is reviewed against:
+2. **Find the spec.** Take the path the user gave: a spec folder, a milestone folder, or a ticket file. Otherwise, look under `.sdd/specs/` for the spec folder whose `spec.md` **Key** matches the commit messages' key, or whose slug matches the branch name, and the tickets whose **Commit** is in the commit list. Without either, ask the user; when there is none, the Spec axis is skipped. Done when you know what the diff is reviewed against:
 
    - **Tickets**, when the diff builds one ticket or milestone: their acceptance criteria and Design patterns rows, with `spec.md` read for context only.
    - **The spec**, when the diff builds all of it: every user story, plus its Testing Decisions seams and Design Patterns rows.

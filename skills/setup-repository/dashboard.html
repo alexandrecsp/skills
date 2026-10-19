@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDD Dashboard</title>
+<script src="https://cdn.tailwindcss.com/3.4.16?plugins=typography"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<style>
+  .edge { transition: stroke .15s, stroke-width .15s, opacity .15s; }
+  .dim .edge:not(.hot) { opacity: .15; }
+  .edge.hot { stroke-width: 2.5; }
+</style>
+</head>
+<body class="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased">
+
+<header class="sticky top-0 z-20 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur">
+  <div class="mx-auto max-w-7xl px-4 h-14 flex items-center gap-3">
+    <span class="font-semibold tracking-tight">SDD</span>
+    <select id="spec" class="hidden min-w-0 max-w-xs truncate rounded-md border border-zinc-200 dark:border-zinc-800 bg-transparent px-2 py-1 text-sm"></select>
+    <nav id="views" class="hidden ml-2 inline-flex rounded-md border border-zinc-200 dark:border-zinc-800 p-0.5 text-sm">
+      <button data-view="list" class="px-3 py-1 rounded">List</button>
+      <button data-view="kanban" class="px-3 py-1 rounded">Kanban</button>
+      <button data-view="graph" class="px-3 py-1 rounded">Graph</button>
+    </nav>
+    <div class="ml-auto flex items-center gap-2 text-sm">
+      <button id="reload" class="hidden rounded-md border border-zinc-200 dark:border-zinc-800 px-3 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-900">Reload</button>
+      <button id="open" class="rounded-md bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-3 py-1 hover:opacity-90">Open folder</button>
+      <input id="picker" type="file" webkitdirectory multiple class="hidden">
+    </div>
+  </div>
+</header>
+
+<main id="main" class="mx-auto max-w-7xl px-4 py-6"></main>
+
+<div id="drawer" class="hidden fixed inset-0 z-30">
+  <div id="backdrop" class="absolute inset-0 bg-black/30"></div>
+  <aside class="absolute inset-y-0 right-0 w-full max-w-2xl bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 flex flex-col">
+    <div class="flex items-center gap-1 border-b border-zinc-200 dark:border-zinc-800 px-4 h-12 text-sm">
+      <div id="tabs" class="flex gap-1"></div>
+      <button id="close" class="ml-auto rounded px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-900" aria-label="Close">✕</button>
+    </div>
+    <article id="doc" class="flex-1 overflow-y-auto px-6 py-5 prose prose-zinc dark:prose-invert max-w-none prose-headings:tracking-tight"></article>
+  </aside>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k) { try { return localStorage.getItem('sdd:' + k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem('sdd:' + k, v); } catch {} },
+};
+
+const state = { files: new Map(), handle: null, specs: [], specId: store.get('spec'), view: store.get('view') || 'list', doc: null };
+
+// ---------- folder access ----------
+
+function idb(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open('sdd-dashboard', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('kv');
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const tx = open.result.transaction('kv', mode);
+      const req = fn(tx.objectStore('kv'));
+      tx.oncomplete = () => resolve(req.result);
+      tx.onerror = () => reject(tx.error);
+    };
+  });
+}
+
+async function specsDir(dir) {
+  if (dir.name === 'specs') return dir;
+  try { return await dir.getDirectoryHandle('specs'); } catch {}
+  try { return await (await dir.getDirectoryHandle('.sdd')).getDirectoryHandle('specs'); } catch {}
+  return null;
+}
+
+async function walk(dir, prefix, out) {
+  for await (const [name, h] of dir.entries()) {
+    if (h.kind === 'directory') await walk(h, prefix + name + '/', out);
+    else if (name.endsWith('.md')) out.set(prefix + name, await (await h.getFile()).text());
+  }
+}
+
+async function loadHandle(handle) {
+  const specs = await specsDir(handle);
+  if (!specs) return empty(`No <code>specs/</code> folder found in <b>${esc(handle.name)}</b>. Pick the <code>.sdd</code> folder or the repository root.`);
+  const files = new Map();
+  await walk(specs, '', files);
+  state.handle = handle;
+  setFiles(files);
+}
+
+async function loadFileList(list) {
+  const files = new Map();
+  const reads = [];
+  for (const f of list) {
+    if (!f.name.endsWith('.md')) continue;
+    const parts = f.webkitRelativePath.split('/');
+    const i = parts.indexOf('specs');
+    if (i < 0) continue;
+    const path = parts.slice(i + 1).join('/');
+    reads.push(f.text().then((t) => files.set(path, t)));
+  }
+  await Promise.all(reads);
+  state.handle = null;
+  if (!files.size) return empty('No markdown found under a <code>specs/</code> folder. Pick the <code>.sdd</code> folder.');
+  setFiles(files);
+}
+
+async function openFolder() {
+  if (!window.showDirectoryPicker) return $('picker').click();
+  let handle;
+  try { handle = await window.showDirectoryPicker({ id: 'sdd', mode: 'read' }); } catch { return; }
+  try { await idb('readwrite', (s) => s.put(handle, 'handle')); } catch {}
+  await loadHandle(handle);
+}
+
+async function reload() {
+  if (state.handle) return loadHandle(state.handle);
+  $('picker').click();
+}
+
+async function restore() {
+  let handle;
+  try { handle = await idb('readonly', (s) => s.get('handle')); } catch {}
+  if (!handle) return empty();
+  if ((await handle.queryPermission({ mode: 'read' })) === 'granted') return loadHandle(handle);
+  empty(`<button id="reconnect" class="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900">Reconnect to <b>${esc(handle.name)}</b></button>`);
+  $('reconnect').onclick = async () => {
+    if ((await handle.requestPermission({ mode: 'read' })) === 'granted') loadHandle(handle);
+  };
+}
+
+// ---------- parsing ----------
+
+const heading = (t) => (/^#\s+(.+)$/m.exec(t) || [])[1]?.trim();
+const field = (t, name) => (new RegExp(`^\\*\\*${name}:\\*\\*\\s*(.+)$`, 'mi').exec(t) || [])[1]?.trim();
+const numOf = (name) => (/^(\d+)-/.exec(name) || [])[1];
+const unslug = (name) => name.replace(/^\d+-/, '').replace(/\.md$/, '').replace(/-/g, ' ');
+
+function parse(files) {
+  const specs = new Map();
+  const spec = (dir) => {
+    if (!specs.has(dir)) specs.set(dir, { id: dir, num: numOf(dir), title: unslug(dir), key: null, path: null, milestones: new Map() });
+    return specs.get(dir);
+  };
+  for (const [path, text] of files) {
+    const p = path.split('/');
+    if (!numOf(p[0])) continue;
+    const s = spec(p[0]);
+    if (p.length === 2 && p[1] === 'spec.md') {
+      s.path = path;
+      s.title = heading(text) || s.title;
+      s.key = /^none$/i.test(field(text, 'Key') || 'none') ? null : field(text, 'Key');
+    } else if (p.length === 4 && p[1] === 'milestones' && numOf(p[2])) {
+      if (!s.milestones.has(p[2])) s.milestones.set(p[2], { id: p[2], num: numOf(p[2]), title: unslug(p[2]), path: null, tickets: [] });
+      const m = s.milestones.get(p[2]);
+      if (p[3] === 'milestone.md') {
+        m.path = path;
+        m.title = (heading(text) || m.title).replace(/^Milestone\s+\d+:\s*/i, '');
+      } else if (numOf(p[3])) {
+        const deps = field(text, 'Depends on') || '';
+        const commit = field(text, 'Commit') || '';
+        m.tickets.push({
+          num: numOf(p[3]),
+          path,
+          title: (heading(text) || unslug(p[3])).replace(/^Ticket\s+\d+:\s*/i, ''),
+          status: (field(text, 'Status') || 'todo').toLowerCase().replace(/`/g, ''),
+          deps: /^none/i.test(deps) ? [] : (deps.match(/\d+/g) || []).map((d) => d.padStart(3, '0')),
+          commit: /^[0-9a-f]{7,40}/i.test(commit) ? commit.slice(0, 7) : null,
+          milestone: m,
+          spec: s,
+        });
+      }
+    }
+  }
+  return [...specs.values()]
+    .map((s) => {
+      s.milestones = [...s.milestones.values()].sort((a, b) => a.num.localeCompare(b.num));
+      s.milestones.forEach((m) => m.tickets.sort((a, b) => a.num.localeCompare(b.num)));
+      s.tickets = s.milestones.flatMap((m) => m.tickets);
+      return s;
+    })
+    .sort((a, b) => a.num.localeCompare(b.num));
+}
+
+function setFiles(files) {
+  state.files = files;
+  state.specs = parse(files);
+  if (!state.specs.some((s) => s.id === state.specId)) state.specId = state.specs.at(-1)?.id;
+  $('reload').classList.remove('hidden');
+  render();
+  if (state.doc) renderDoc();
+}
+
+// ---------- rendering ----------
+
+const STATUS_ORDER = ['todo', 'doing', 'in progress', 'blocked', 'done'];
+const statusTone = (s) =>
+  s === 'done' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+  : s === 'todo' ? 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+  : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300';
+const pill = (s) => `<span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(s)}">${esc(s)}</span>`;
+const num = (n) => `<span class="font-mono text-xs text-zinc-400">#${esc(n)}</span>`;
+const progress = (ts) => {
+  const done = ts.filter((t) => t.status === 'done').length;
+  const pct = ts.length ? Math.round((done / ts.length) * 100) : 0;
+  return `<span class="inline-flex items-center gap-2 text-xs text-zinc-500">
+    <span class="h-1.5 w-20 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden"><span class="block h-full bg-emerald-500" style="width:${pct}%"></span></span>${done}/${ts.length}</span>`;
+};
+
+function empty(msg) {
+  $('spec').classList.add('hidden');
+  $('views').classList.add('hidden');
+  $('main').innerHTML = `
+    <div class="mx-auto max-w-md py-24 text-center space-y-4">
+      <h1 class="text-xl font-semibold tracking-tight">Spec dashboard</h1>
+      <p class="text-sm text-zinc-500">Open the repository's <code>.sdd</code> folder to see its specs, milestones and tickets. Nothing leaves your machine.</p>
+      ${msg ? `<div class="text-sm">${msg}</div>` : ''}
+    </div>`;
+}
+
+function render() {
+  const spec = state.specs.find((s) => s.id === state.specId);
+  if (!spec) return empty('No specs yet. Run <code>/to-spec</code> to write one.');
+
+  const sel = $('spec');
+  sel.classList.remove('hidden');
+  sel.innerHTML = state.specs.map((s) => `<option value="${esc(s.id)}" ${s.id === spec.id ? 'selected' : ''}>${esc(s.num)} · ${esc(s.title)}</option>`).join('');
+  $('views').classList.remove('hidden');
+  document.querySelectorAll('#views button').forEach((b) => {
+    b.className = 'px-3 py-1 rounded ' + (b.dataset.view === state.view ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'hover:bg-zinc-100 dark:hover:bg-zinc-900');
+  });
+
+  const head = `
+    <div class="mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-2">
+      <button data-open-spec class="text-left text-2xl font-semibold tracking-tight hover:underline">${esc(spec.title)}</button>
+      ${spec.key ? `<span class="font-mono text-sm text-zinc-500">${esc(spec.key)}</span>` : ''}
+      <span class="ml-auto">${progress(spec.tickets)}</span>
+    </div>`;
+
+  const body = !spec.tickets.length
+    ? `<p class="text-sm text-zinc-500">No tickets yet. Run <code>/to-tickets</code> on this spec.</p>`
+    : state.view === 'kanban' ? kanban(spec) : state.view === 'graph' ? graph(spec) : list(spec);
+
+  $('main').innerHTML = head + body;
+  $('main').querySelector('[data-open-spec]').onclick = () => openDoc([['Spec', spec.path]]);
+  $('main').querySelectorAll('[data-ticket]').forEach((el) => (el.onclick = () => openTicket(spec, el.dataset.ticket)));
+  $('main').querySelectorAll('[data-milestone]').forEach((el) => {
+    const m = spec.milestones.find((m) => m.id === el.dataset.milestone);
+    el.onclick = () => openDoc([['Milestone', m.path], ['Spec', spec.path]]);
+  });
+  if (state.view === 'graph') wireGraph();
+}
+
+function list(spec) {
+  return spec.milestones.map((m) => `
+    <section class="mb-8">
+      <button data-milestone="${esc(m.id)}" class="mb-2 flex w-full items-center gap-3 text-left group">
+        <span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span>
+        <span class="font-medium group-hover:underline">${esc(m.title)}</span>
+        <span class="ml-auto">${progress(m.tickets)}</span>
+      </button>
+      <ul class="divide-y divide-zinc-100 dark:divide-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+        ${m.tickets.map((t) => `
+          <li data-ticket="${esc(t.num)}" class="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-900/60">
+            ${num(t.num)}
+            <span class="min-w-0 flex-1 truncate text-sm">${esc(t.title)}</span>
+            ${t.deps.length ? `<span class="hidden sm:inline font-mono text-xs text-zinc-400">← ${t.deps.map(esc).join(', ')}</span>` : ''}
+            ${t.commit ? `<span class="hidden md:inline font-mono text-xs text-zinc-400">${esc(t.commit)}</span>` : ''}
+            ${pill(t.status)}
+          </li>`).join('')}
+      </ul>
+    </section>`).join('');
+}
+
+function kanban(spec) {
+  const found = new Set(spec.tickets.map((t) => t.status));
+  const cols = [...new Set(['todo', ...STATUS_ORDER.filter((s) => found.has(s)), ...[...found].filter((s) => !STATUS_ORDER.includes(s)), 'done'])];
+  cols.push(cols.splice(cols.indexOf('done'), 1)[0]);
+  return `<div class="grid gap-4" style="grid-template-columns:repeat(${cols.length},minmax(220px,1fr));overflow-x:auto">
+    ${cols.map((c) => {
+      const ts = spec.tickets.filter((t) => t.status === c);
+      return `<div class="rounded-lg bg-zinc-50 dark:bg-zinc-900/50 p-3">
+        <div class="mb-3 flex items-center gap-2 text-sm font-medium">${pill(c)}<span class="text-zinc-400 text-xs">${ts.length}</span></div>
+        <div class="space-y-2">${ts.map((t) => `
+          <div data-ticket="${esc(t.num)}" class="cursor-pointer rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 hover:border-zinc-400 dark:hover:border-zinc-600">
+            <div class="flex items-center gap-2">${num(t.num)}<span class="truncate text-xs text-zinc-400">M${esc(t.milestone.num)} · ${esc(t.milestone.title)}</span></div>
+            <div class="mt-1 text-sm">${esc(t.title)}</div>
+          </div>`).join('')}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+const G = { colW: 220, gapX: 90, cardH: 58, gapY: 16, top: 44 };
+
+function graph(spec) {
+  const pos = new Map();
+  spec.milestones.forEach((m, c) => m.tickets.forEach((t, r) => pos.set(t.num, { x: c * (G.colW + G.gapX), y: G.top + r * (G.cardH + G.gapY), t })));
+  const rows = Math.max(...spec.milestones.map((m) => m.tickets.length), 1);
+  const W = spec.milestones.length * (G.colW + G.gapX) - G.gapX + 60;
+  const H = G.top + rows * (G.cardH + G.gapY);
+
+  const edges = [];
+  for (const [n, to] of pos) for (const d of to.t.deps) {
+    const from = pos.get(d);
+    if (!from) continue;
+    const y1 = from.y + G.cardH / 2, y2 = to.y + G.cardH / 2;
+    let path;
+    if (from.x === to.x) {
+      const x = from.x + G.colW, bulge = 24 + Math.abs(to.y - from.y) / 6;
+      path = `M${x},${y1} C${x + bulge},${y1} ${x + bulge},${y2} ${x + 4},${y2}`;
+    } else {
+      const x1 = from.x + G.colW, x2 = to.x - 4, mid = (x2 - x1) / 2;
+      path = `M${x1},${y1} C${x1 + mid},${y1} ${x2 - mid},${y2} ${x2},${y2}`;
+    }
+    const tone = from.t.status === 'done' ? 'stroke-zinc-300 dark:stroke-zinc-700' : 'stroke-zinc-500 dark:stroke-zinc-400';
+    edges.push(`<path class="edge ${tone}" data-from="${esc(d)}" data-to="${esc(n)}" d="${path}" fill="none" stroke-width="1.5" marker-end="url(#arrow)"/>`);
+  }
+
+  return `<div class="overflow-x-auto pb-4"><div id="graph" class="relative" style="width:${W}px;height:${H}px">
+    <svg class="absolute inset-0 overflow-visible text-zinc-400" width="${W}" height="${H}">
+      <defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+      ${edges.join('')}
+    </svg>
+    ${spec.milestones.map((m, c) => `
+      <button data-milestone="${esc(m.id)}" class="absolute flex items-center gap-2 text-left text-sm hover:underline" style="left:${c * (G.colW + G.gapX)}px;top:0;width:${G.colW}px">
+        <span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span><span class="truncate font-medium">${esc(m.title)}</span>
+      </button>`).join('')}
+    ${[...pos.values()].map(({ x, y, t }) => `
+      <div data-ticket="${esc(t.num)}" class="node absolute cursor-pointer rounded-md border bg-white dark:bg-zinc-950 px-3 py-2 hover:border-zinc-500 ${t.status === 'done' ? 'border-emerald-300 dark:border-emerald-900' : 'border-zinc-200 dark:border-zinc-800'}"
+        style="left:${x}px;top:${y}px;width:${G.colW}px;height:${G.cardH}px">
+        <div class="flex items-center gap-2">${num(t.num)}<span class="ml-auto">${pill(t.status)}</span></div>
+        <div class="mt-0.5 truncate text-sm">${esc(t.title)}</div>
+      </div>`).join('')}
+  </div></div>`;
+}
+
+function wireGraph() {
+  const g = $('graph');
+  g.querySelectorAll('.node').forEach((node) => {
+    const n = node.dataset.ticket;
+    node.onmouseenter = () => {
+      g.classList.add('dim');
+      g.querySelectorAll(`.edge[data-from="${n}"], .edge[data-to="${n}"]`).forEach((e) => e.classList.add('hot'));
+    };
+    node.onmouseleave = () => {
+      g.classList.remove('dim');
+      g.querySelectorAll('.edge.hot').forEach((e) => e.classList.remove('hot'));
+    };
+  });
+}
+
+// ---------- drawer ----------
+
+function openTicket(spec, n) {
+  const t = spec.tickets.find((t) => t.num === n);
+  openDoc([['Ticket ' + t.num, t.path], ['Milestone', t.milestone.path], ['Spec', spec.path]]);
+}
+
+function openDoc(tabs) {
+  state.doc = { tabs: tabs.filter(([, p]) => p), active: 0 };
+  if (!state.doc.tabs.length) return (state.doc = null);
+  $('drawer').classList.remove('hidden');
+  renderDoc();
+}
+
+function renderDoc() {
+  const { tabs, active } = state.doc;
+  $('tabs').innerHTML = tabs.map(([label], i) => `<button data-tab="${i}" class="rounded px-2.5 py-1 ${i === active ? 'bg-zinc-100 dark:bg-zinc-900 font-medium' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'}">${esc(label)}</button>`).join('');
+  $('tabs').querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => { state.doc.active = +b.dataset.tab; renderDoc(); }));
+  const text = state.files.get(tabs[active][1]);
+  $('doc').innerHTML = text == null ? '<p>This file no longer exists.</p>' : marked.parse(text);
+  $('doc').scrollTop = 0;
+}
+
+function closeDoc() {
+  state.doc = null;
+  $('drawer').classList.add('hidden');
+}
+
+// ---------- wiring ----------
+
+$('open').onclick = openFolder;
+$('reload').onclick = reload;
+$('picker').onchange = (e) => e.target.files.length && loadFileList(e.target.files);
+$('spec').onchange = (e) => { state.specId = e.target.value; store.set('spec', state.specId); render(); };
+document.querySelectorAll('#views button').forEach((b) => (b.onclick = () => { state.view = b.dataset.view; store.set('view', state.view); render(); }));
+$('close').onclick = closeDoc;
+$('backdrop').onclick = closeDoc;
+document.addEventListener('keydown', (e) => e.key === 'Escape' && closeDoc());
+window.addEventListener('focus', () => state.handle && loadHandle(state.handle));
+
+restore();
+</script>
+</body>
+</html>

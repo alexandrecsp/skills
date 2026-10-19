@@ -3,6 +3,8 @@ Replace each section's guidance with its content. The first four sections are th
 ```markdown
 # <Spec title>
 
+**Key:** <the key the user gave, or "None">
+
 ## Problem Statement
 
 The problem the user is facing, from the user's perspective.

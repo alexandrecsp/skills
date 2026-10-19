@@ -1,13 +1,15 @@
 ---
 name: to-tickets
-description: Break a spec, a plan, or the current conversation into milestones of tracer-bullet tickets, saved in the spec's folder under .scratch/specs/.
+description: Break a spec, a plan, or the current conversation into milestones of tracer-bullet tickets, saved in the spec's folder under .sdd/specs/.
 argument-hint: "[spec-folder]"
 disable-model-invocation: true
 metadata:
   type: process
 ---
 
-Break the work into **milestones**, each a group of **tickets**. A milestone is an increment that leaves the code working and tested once its last ticket lands. Milestones run in order: a milestone starts only when the one before it is done. A ticket is a **tracer bullet**: a narrow but complete slice that one agent implements in a fresh context. Tickets are built one at a time in number order, so the order carries the dependencies: each ticket builds only on the tickets numbered before it.
+Break the work into **milestones**, each a group of **tickets**. A milestone is an increment that leaves the code working and tested once its last ticket lands. Milestones run in order: a milestone starts only when the one before it is done. A ticket is a **tracer bullet**: a narrow but complete slice that one agent implements in a fresh context. Tickets are built one at a time in number order, so each ticket builds only on tickets numbered before it, and its **Depends on** line names exactly which ones.
+
+This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setup-repository` and stop.
 
 ## Process
 
@@ -24,22 +26,22 @@ Break the work into **milestones**, each a group of **tickets**. A milestone is 
 
    A mechanical change that breaks call sites across the codebase at once cannot land as a tracer bullet; sequence it by [WIDE-REFACTOR.md](WIDE-REFACTOR.md).
 
-   Number the tickets `001` upwards, continuing across milestones rather than restarting, in dependency order. Done when every user story is covered by some ticket's acceptance criteria, every criterion names its seam, and no ticket depends on a higher-numbered one.
+   Number the tickets `001` upwards, continuing across milestones rather than restarting, in dependency order. Give each ticket its **Depends on**: the tickets it builds on directly, in any milestone. Done when every user story is covered by some ticket's acceptance criteria, every criterion names its seam, and every **Depends on** names only lower-numbered tickets.
 
-4. **Quiz the user.** Present the breakdown grouped by milestone: each milestone's increment and its check, then its tickets in order, each with its title and what it delivers. Without a spec, lead with the seams you proposed, each with what it catches. Ask:
+4. **Quiz the user.** Present the breakdown grouped by milestone: each milestone's increment and its check, then its tickets in order, each with its title, what it delivers, and its **Depends on**. Without a spec, lead with the seams you proposed, each with what it catches. Ask:
 
-   - Without a spec: are these the right seams?
+   - Without a spec: are these the right seams, and, when `.sdd/settings.json` sets a `commitKeyPattern`, which key do this work's commits carry (fully matching it, or none)?
    - Does each milestone boundary mark a meaningful increment?
    - Does the ticket granularity feel right (too coarse, too fine)?
-   - Does the order hold: does each ticket need only the ones before it?
+   - Do the dependencies hold: does each ticket need exactly the tickets its **Depends on** names?
    - Should any ticket or milestone be merged or split?
 
-   Iterate until the user approves. Done when the user approves the breakdown, seams included.
+   Iterate until the user approves. Done when the user approves the breakdown, seams included, and, without a spec, has given the key or none.
 
-5. **Write the files.** Write into the spec folder, `.scratch/specs/NNN-<slug>/`; without a spec, create one with the next free `NNN` and a slug of the work's name. Fill the files from [TEMPLATES.md](TEMPLATES.md):
+5. **Write the files.** Write into the spec folder, `.sdd/specs/NNN-<slug>/`; without a spec, create one with the next free `NNN` and a slug of the work's name, holding a `spec.md` with only the title and the **Key** line of [SPEC-TEMPLATE.md](../to-spec/SPEC-TEMPLATE.md). Fill the files from [TEMPLATES.md](TEMPLATES.md):
 
    ```
-   .scratch/specs/NNN-<slug>/
+   .sdd/specs/NNN-<slug>/
    ├── spec.md
    └── milestones/
        └── NNN-<milestone-slug>/
