@@ -1,0 +1,23 @@
+{
+  "name": "alper",
+  "owner": {
+    "name": "Alexandre",
+    "email": "alexandresp9@gmail.com"
+  },
+  "description": "Alper's spec-driven skills, as an installable Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "alper-skills",
+      "source": "./",
+      "description": "Alper's spec-driven agent skills (brainstorm, spec and ticket flows, test-first builds, code review, domain modelling).",
+      "category": "engineering",
+      "keywords": [
+        "engineering",
+        "skills",
+        "spec-driven",
+        "tdd",
+        "code-review"
+      ]
+    }
+  ]
+}
