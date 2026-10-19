@@ -16,4 +16,4 @@ Turn the current conversation and your understanding of the codebase into a spec
 
 4. **Confirm.** Show the user the seams, plus any pattern choices you made in step 3, and wait. Done when the user confirms them.
 
-5. **Write the spec.** Save it to `.scratch/specs/NNN-<slug>.md`: `NNN` is one past the highest number already there (starting at `001`), and `<slug>` is the spec title in kebab-case. Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md). Done when every section is filled from the conversation and the user has the spec's path.
+5. **Write the spec.** Save it as `spec.md` in a new spec folder, `.scratch/specs/NNN-<slug>/`: `NNN` is one past the highest folder number already there (starting at `001`), and `<slug>` is the spec title in kebab-case. Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md). Done when every section is filled from the conversation and the user has the spec's path.
