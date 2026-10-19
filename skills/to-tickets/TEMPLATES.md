@@ -33,6 +33,10 @@ The spec's Design Patterns rows this ticket implements, copied as they are, or "
 
 - [ ] A behaviour a test at a named seam can prove
 - [ ] ...
+
+## Notes
+
+Left empty; the agent that builds this ticket fills it.
 ```
 
 Set **Status** to `done` when the ticket lands.
