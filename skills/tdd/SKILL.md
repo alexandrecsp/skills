@@ -34,6 +34,6 @@ When the shape of the interface is itself in question (how deep the module is, w
 - **Then green.** Write only enough code to pass it, then run the test again.
 - **One slice at a time.** One seam, one test, one minimal implementation per cycle.
 - **One logical assertion per test.**
-- **Refactor at review.** Refactoring belongs to the `code-review` skill's findings, outside the red → green cycle. When nothing will review the work afterwards (`build` reviews each milestone), end by offering the user a `code-review` of the changes.
+- **Refactor at review.** Refactoring belongs to the `review-changes` skill's findings, outside the red → green cycle. When nothing will review the work afterwards (`build` reviews each milestone), end by offering the user a `review-changes` run.
 
 The loop is done when every behaviour in scope has a test at a confirmed seam that went red, then green, and the full suite passes.

@@ -1,13 +1,13 @@
 ---
 name: build
-description: Build the next milestone of a spec under .scratch/specs/, each ticket test-first in its own sub-agent, then one code review over the milestone.
+description: Build the next milestone of a spec under .scratch/specs/, each ticket test-first in its own sub-agent, then one review of the milestone's changes.
 argument-hint: "[spec-folder or milestone-folder]"
 disable-model-invocation: true
 metadata:
   type: process
 ---
 
-Build one **milestone** per call, from the files `to-tickets` wrote under `.scratch/specs/NNN-<slug>/`. Each ticket is built by an **implementer sub-agent** in a fresh context, and the milestone closes with one `code-review` over its whole diff.
+Build one **milestone** per call, from the files `to-tickets` wrote under `.scratch/specs/NNN-<slug>/`. Each ticket is built by an **implementer sub-agent** in a fresh context, and the milestone closes with one `review-changes` over its whole diff.
 
 Talk to sub-agents through **context pointers**: the paths of the ticket, its `milestone.md` and the `spec.md`, rather than their contents.
 
@@ -25,7 +25,7 @@ Talk to sub-agents through **context pointers**: the paths of the ticket, its `m
 
 4. **Check the increment.** Run the full suite and the check in `milestone.md`'s **Done when**. When either fails, dispatch an implementer sub-agent with the failure, then run both again. After two failed fixes, report the failure to the user and stop. Done when both pass.
 
-5. **Review.** Invoke the `code-review` skill with the fixed point and the milestone folder, show the user the report, and ask which judgement calls to fix. Done when the user has answered, or the review found nothing to fix.
+5. **Review.** Invoke the `review-changes` skill with the fixed point and the milestone folder, show the user the report, and ask which judgement calls to fix. Done when the user has answered, or the review found nothing to fix.
 
 6. **Fix.** Fix every Spec finding and hard violation, plus the judgement calls the user picked, in one implementer sub-agent that runs the full suite and commits as `Milestone NNN: review fixes`. Done when the fixes are committed with the suite passing, or there was nothing to fix.
 

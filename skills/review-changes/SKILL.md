@@ -1,5 +1,5 @@
 ---
-name: code-review
+name: review-changes
 description: Review changes against this repo's coding standards and their spec. Use when the user wants a branch, a PR, or work in progress reviewed.
 argument-hint: "[fixed-point] [spec-path]"
 metadata:

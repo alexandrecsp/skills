@@ -4,6 +4,6 @@ A **wide refactor** is one mechanical change (rename a column, retype a shared s
 2. **Migrate**: move the call sites over in batches sized by blast radius (per package, per directory), one ticket per batch, numbered after the expand. The old form still exists, so every batch lands green.
 3. **Contract**: delete the old form once no caller remains, in a ticket numbered after every migrate batch.
 
-When even the batches cannot land green alone, keep the sequence but let the batches share an integration branch, followed by a final integrate-and-verify ticket; green is promised only there.
+When a batch cannot land green alone, merge it with the batches it interlocks with until each lands green. When a merged batch no longer fits one fresh context window, flag it to the user in the quiz.
 
 The milestone is done when the contract ticket lands.
