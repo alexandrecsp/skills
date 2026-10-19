@@ -61,7 +61,7 @@ const store = {
   set(k, v) { try { localStorage.setItem('sdd:' + k, v); } catch {} },
 };
 
-const state = { files: new Map(), handle: null, specs: [], specId: store.get('spec'), view: store.get('view') || 'list', doc: null };
+const state = { files: new Map(), handle: null, specs: [], specId: store.get('spec'), view: store.get('view') || 'list', dir: store.get('dir') || 'h', doc: null };
 
 // ---------- folder access ----------
 
@@ -329,9 +329,9 @@ function kanban(spec) {
   </div>`;
 }
 
-const G = { colW: 220, gapX: 70, cardH: 58, gapY: 16, top: 44 };
+const G = { colW: 220, gapX: 70, cardH: 58, gapY: 16, top: 44, gapV: 56, gutter: 170 };
 
-// Layers each milestone's tickets by dependency depth, so every edge runs left to right.
+// Layers each milestone's tickets by dependency depth, so every edge runs forward (rightward or downward).
 function layout(spec) {
   const byNum = new Map(spec.tickets.map((t) => [t.num, t]));
   const col = new Map();
@@ -355,51 +355,105 @@ function layout(spec) {
     start = end;
   }
 
+  // An edge that skips layers runs through a lane: an empty slot it holds in each layer it crosses,
+  // so it never passes under a card. Edges from the same ticket share one lane and branch off it.
+  const reach = new Map();
+  for (const t of spec.tickets) for (const d of t.deps) {
+    if (col.has(d) && col.get(d) < col.get(t.num) - 1) reach.set(d, Math.max(reach.get(d) ?? 0, col.get(t.num) - 1));
+  }
+  const lane = (d, l) => `~${d}@${l}`;
+  const nodes = spec.tickets.map((t) => ({
+    id: t.num,
+    layer: col.get(t.num),
+    preds: t.deps.filter((d) => col.has(d) && col.get(d) < col.get(t.num)).map((d) => (col.get(d) < col.get(t.num) - 1 ? lane(d, col.get(t.num) - 1) : d)),
+  }));
+  for (const [d, last] of reach) for (let l = col.get(d) + 1; l <= last; l++) {
+    nodes.push({ id: lane(d, l), layer: l, preds: [l === col.get(d) + 1 ? d : lane(d, l - 1)] });
+    col.set(lane(d, l), l);
+  }
+
   const columns = Array.from({ length: start }, () => []);
-  spec.tickets.forEach((t) => columns[col.get(t.num)].push(t));
+  nodes.forEach((n) => columns[n.layer].push(n));
   const row = new Map();
-  columns.forEach((ts) => {
-    const bary = (t) => {
-      const rs = t.deps.map((d) => row.get(d)).filter((r) => r != null);
+  columns.forEach((ns) => {
+    const bary = (n) => {
+      const rs = n.preds.map((p) => row.get(p)).filter((r) => r != null);
       return rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : Infinity;
     };
-    ts.sort((a, b) => bary(a) - bary(b) || a.num.localeCompare(b.num)).forEach((t, r) => row.set(t.num, r));
+    ns.sort((a, b) => bary(a) - bary(b) || a.id.localeCompare(b.id)).forEach((n, r) => row.set(n.id, r));
   });
 
-  const pos = new Map(spec.tickets.map((t) => [t.num, { x: col.get(t.num) * (G.colW + G.gapX), y: G.top + row.get(t.num) * (G.cardH + G.gapY), t }]));
-  return { pos, spans, cols: start, rows: Math.max(...columns.map((ts) => ts.length), 1) };
+  // The lane slots an edge from d to t passes through, in order.
+  const route = (d, t) => {
+    const out = [];
+    for (let l = col.get(d) + 1; l < col.get(t); l++) out.push(lane(d, l));
+    return out;
+  };
+  return { col, row, spans, route, layers: start, width: Math.max(...columns.map((ns) => ns.length), 1) };
+}
+
+// Maps layers and slots to pixels: layers run along x when horizontal, along y when vertical.
+function geometry(dir) {
+  return dir === 'v'
+    ? { layer: (l) => l * (G.cardH + G.gapV), slot: (r) => G.gutter + r * (G.colW + G.gapY), at: (l, r) => ({ x: G.gutter + r * (G.colW + G.gapY), y: l * (G.cardH + G.gapV) }) }
+    : { layer: (l) => l * (G.colW + G.gapX), slot: (r) => G.top + r * (G.cardH + G.gapY), at: (l, r) => ({ x: l * (G.colW + G.gapX), y: G.top + r * (G.cardH + G.gapY) }) };
 }
 
 function graph(spec) {
-  const { pos, spans, cols, rows } = layout(spec);
-  const W = cols * (G.colW + G.gapX) - G.gapX + 20;
-  const H = G.top + rows * (G.cardH + G.gapY);
-  const spanX = (c) => c * (G.colW + G.gapX);
+  const v = state.dir === 'v';
+  const { col, row, spans, route, layers, width } = layout(spec);
+  const g = geometry(state.dir);
+  const pos = new Map(spec.tickets.map((t) => [t.num, { ...g.at(col.get(t.num), row.get(t.num)), t }]));
+  const W = v ? G.gutter + width * (G.colW + G.gapY) : layers * (G.colW + G.gapX) - G.gapX + 20;
+  const H = v ? layers * (G.cardH + G.gapV) - G.gapV + 20 : G.top + width * (G.cardH + G.gapY);
+  const gap = v ? G.gapV : G.gapX;
 
   const edges = [];
   for (const [n, to] of pos) for (const d of to.t.deps) {
     const from = pos.get(d);
     if (!from) continue;
-    const y1 = from.y + G.cardH / 2, y2 = to.y + G.cardH / 2;
-    const x1 = from.x + G.colW, x2 = to.x - 4, mid = Math.max(30, Math.abs(x2 - x1) / 2);
-    const path = `M${x1},${y1} C${x1 + mid},${y1} ${x2 - mid},${y2} ${x2},${y2}`;
+    // Entry and exit points of a slot, and a curve between them along the layer axis.
+    const box = (id) => g.at(col.get(id), row.get(id));
+    const enter = ({ x, y }) => (v ? [x + G.colW / 2, y] : [x, y + G.cardH / 2]);
+    const exit = ({ x, y }) => (v ? [x + G.colW / 2, y + G.cardH] : [x + G.colW, y + G.cardH / 2]);
+    const curve = ([x1, y1], [x2, y2]) => {
+      const mid = Math.max(v ? 24 : 30, Math.abs(v ? y2 - y1 : x2 - x1) / 2);
+      return v ? ` C${x1},${y1 + mid} ${x2},${y2 - mid} ${x2},${y2}` : ` C${x1 + mid},${y1} ${x2 - mid},${y2} ${x2},${y2}`;
+    };
+    let at = exit(from);
+    let path = `M${at[0]},${at[1]}`;
+    if (col.get(d) < col.get(n)) for (const id of route(d, n)) {
+      path += curve(at, enter(box(id)));
+      at = exit(box(id));
+      path += ` L${at[0]},${at[1]}`;
+    }
+    const [ex, ey] = enter(to);
+    path += curve(at, v ? [ex, ey - 4] : [ex - 4, ey]);
     const tone = from.t.status === 'done' ? 'stroke-zinc-300 dark:stroke-zinc-700' : 'stroke-zinc-500 dark:stroke-zinc-400';
     edges.push(`<path class="edge ${tone}" data-from="${esc(d)}" data-to="${esc(n)}" d="${path}" fill="none" stroke-width="1.5" marker-end="url(#arrow)"/>`);
   }
 
-  return `<div data-scroll class="overflow-x-auto pb-4"><div id="graph" class="relative" style="width:${W}px;height:${H}px">
+  const dirBtn = (d, label) => `<button data-dir="${d}" class="px-2 py-0.5 rounded ${state.dir === d ? 'bg-zinc-200 dark:bg-zinc-800' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'}">${label}</button>`;
+  return `<div class="mb-3 flex justify-end"><div class="inline-flex rounded-md border border-zinc-200 dark:border-zinc-800 p-0.5 text-xs">${dirBtn('h', 'Horizontal')}${dirBtn('v', 'Vertical')}</div></div>
+  <div data-scroll class="overflow-x-auto pb-4"><div id="graph" class="relative" style="width:${W}px;height:${H}px">
     <svg class="absolute inset-0 overflow-visible text-zinc-400" width="${W}" height="${H}">
       <defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
       ${spans.slice(1).map(({ start }) => {
-        const x = spanX(start) - G.gapX / 2;
-        return `<line x1="${x}" y1="0" x2="${x}" y2="${H}" class="stroke-zinc-200 dark:stroke-zinc-800" stroke-width="1"/>`;
+        const p = g.layer(start) - gap / 2;
+        return v
+          ? `<line x1="0" y1="${p}" x2="${W}" y2="${p}" class="stroke-zinc-200 dark:stroke-zinc-800" stroke-width="1"/>`
+          : `<line x1="${p}" y1="0" x2="${p}" y2="${H}" class="stroke-zinc-200 dark:stroke-zinc-800" stroke-width="1"/>`;
       }).join('')}
       ${edges.join('')}
     </svg>
-    ${spans.map(({ m, start, end }) => `
-      <button data-milestone="${esc(m.id)}" class="absolute flex items-center justify-center gap-2 text-sm hover:underline" style="left:${spanX(start)}px;top:0;width:${spanX(end) - G.gapX - spanX(start)}px">
-        <span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span><span class="truncate font-medium">${esc(m.title)}</span>
-      </button>`).join('')}
+    ${spans.map(({ m, start, end }) => {
+      const a = g.layer(start), len = g.layer(end) - gap - a;
+      const box = v ? `left:0;top:${a}px;width:${G.gutter - 24}px;height:${len}px` : `left:${a}px;top:0;width:${len}px`;
+      return `
+      <button data-milestone="${esc(m.id)}" class="absolute flex ${v ? 'flex-col items-start justify-center gap-0.5' : 'items-center justify-center gap-2'} text-left text-sm hover:underline" style="${box}">
+        <span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span><span class="${v ? 'line-clamp-2' : 'truncate'} font-medium">${esc(m.title)}</span>
+      </button>`;
+    }).join('')}
     ${[...pos.values()].map(({ x, y, t }) => `
       <div data-ticket="${esc(t.num)}" class="node absolute cursor-pointer rounded-md border bg-white dark:bg-zinc-950 px-3 py-2 hover:border-zinc-500 ${cardTone(t.status)}"
         style="left:${x}px;top:${y}px;width:${G.colW}px;height:${G.cardH}px">
@@ -410,6 +464,7 @@ function graph(spec) {
 }
 
 function wireGraph() {
+  $('main').querySelectorAll('[data-dir]').forEach((b) => (b.onclick = () => { state.dir = b.dataset.dir; store.set('dir', state.dir); render(); }));
   const g = $('graph');
   g.querySelectorAll('.node').forEach((node) => {
     const n = node.dataset.ticket;
