@@ -12,6 +12,16 @@
   .edge.hot { stroke-width: 2.5; }
   @keyframes blink { 0%, 100% { border-color: rgb(245 158 11); background-color: rgb(245 158 11 / .18); box-shadow: 0 0 0 3px rgb(245 158 11 / .35); } 50% { border-color: rgb(245 158 11 / .25); background-color: transparent; box-shadow: none; } }
   .doing { animation: blink 1s ease-in-out infinite; }
+  .dots { background-image: radial-gradient(rgb(161 161 170 / .12) 1px, transparent 1px); background-size: 18px 18px; }
+  #drawer aside { transform: translateX(100%); transition: transform .28s cubic-bezier(.2, .8, .2, 1); }
+  #drawer #backdrop { opacity: 0; transition: opacity .25s; }
+  #drawer.open aside { transform: none; }
+  #drawer.open #backdrop { opacity: 1; }
+  #doc ul:has(> li .task) { padding-left: 0; }
+  #doc li:has(.task) { list-style: none; padding-left: 0; }
+  #doc li:has(.task.checked) { color: rgb(113 113 122); }
+  .task { display: inline-grid; place-items: center; width: 1.05em; height: 1.05em; margin-right: .6em; vertical-align: -.15em; border-radius: .3em; border: 1.5px solid rgb(161 161 170 / .7); }
+  .task.checked { background: rgb(16 185 129); border-color: rgb(16 185 129); color: white; }
   @supports not selector(::-webkit-scrollbar) { * { scrollbar-width: thin; scrollbar-color: rgb(161 161 170 / .4) transparent; } }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
@@ -24,8 +34,10 @@
 
 <header class="sticky top-0 z-20 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur">
   <div class="mx-auto max-w-7xl px-4 h-14 flex items-center gap-3">
-    <span class="font-semibold tracking-tight">SDD</span>
-    <select id="spec" class="hidden min-w-0 max-w-xs truncate rounded-md border border-zinc-200 dark:border-zinc-800 bg-transparent px-2 py-1 text-sm"></select>
+    <button id="brand" class="flex shrink-0 items-center gap-2 font-semibold tracking-tight" title="All specs">
+      <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-emerald-400 to-sky-500 text-xs font-bold text-white shadow-sm">S</span>SDD
+    </button>
+    <div id="crumbs" class="flex min-w-0 items-center gap-2 text-sm"></div>
     <nav id="views" class="hidden ml-2 inline-flex rounded-md border border-zinc-200 dark:border-zinc-800 p-0.5 text-sm">
       <button data-view="list" class="px-3 py-1 rounded">List</button>
       <button data-view="kanban" class="px-3 py-1 rounded">Kanban</button>
@@ -43,13 +55,30 @@
 <main id="main" class="mx-auto max-w-7xl px-4 py-6"></main>
 
 <div id="drawer" class="hidden fixed inset-0 z-30">
-  <div id="backdrop" class="absolute inset-0 bg-black/30"></div>
-  <aside class="absolute inset-y-0 right-0 w-full max-w-2xl bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 flex flex-col">
-    <div class="flex items-center gap-1 border-b border-zinc-200 dark:border-zinc-800 px-4 h-12 text-sm">
-      <div id="tabs" class="flex gap-1"></div>
-      <button id="close" class="ml-auto rounded px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-900" aria-label="Close">✕</button>
+  <div id="backdrop" class="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px]"></div>
+  <aside class="absolute inset-y-0 right-0 flex w-full max-w-2xl flex-col overflow-hidden border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl sm:rounded-l-2xl">
+    <div id="docAccent" class="h-1 shrink-0"></div>
+    <header class="shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900/60 dark:to-zinc-950 px-6 pt-5">
+      <div class="flex items-start gap-3">
+        <div id="docHead" class="min-w-0 flex-1"></div>
+        <div class="-mr-2 -mt-1 flex shrink-0 items-center gap-0.5">
+          <span id="docNav" class="hidden items-center gap-0.5 border-r border-zinc-200 dark:border-zinc-800 pr-1 mr-1">
+            <button id="prev" class="grid h-8 w-8 place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-30 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" title="Previous ticket (←)" aria-label="Previous ticket"><svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
+            <button id="next" class="grid h-8 w-8 place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-30 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" title="Next ticket (→)" aria-label="Next ticket"><svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>
+          </span>
+          <button id="close" class="grid h-8 w-8 place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" title="Close (Esc)" aria-label="Close"><svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+        </div>
+      </div>
+      <nav id="tabs" class="mt-4 flex gap-5 text-sm"></nav>
+    </header>
+    <div id="docScroll" class="flex-1 overflow-y-auto">
+      <article id="doc" class="prose prose-zinc dark:prose-invert max-w-none px-6 py-6 prose-headings:tracking-tight prose-h2:mt-9 prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-2 prose-h2:text-lg dark:prose-h2:border-zinc-800 prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-code:rounded prose-code:bg-zinc-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-normal prose-code:before:content-none prose-code:after:content-none dark:prose-code:bg-zinc-800 prose-pre:rounded-xl prose-table:text-sm prose-th:text-left"></article>
     </div>
-    <article id="doc" class="flex-1 overflow-y-auto px-6 py-5 prose prose-zinc dark:prose-invert max-w-none prose-headings:tracking-tight"></article>
+    <footer class="flex shrink-0 items-center gap-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 px-6 py-2.5 text-xs text-zinc-500">
+      <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 1.5h5.5L13 5v9.5H4z"/><path d="M9.5 1.5V5H13"/></svg>
+      <span id="docPath" class="min-w-0 flex-1 truncate font-mono"></span>
+      <button id="copyPath" class="shrink-0 rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 hover:border-zinc-400 hover:text-zinc-900 dark:hover:border-zinc-500 dark:hover:text-zinc-100">Copy path</button>
+    </footer>
   </aside>
 </div>
 
@@ -61,7 +90,11 @@ const store = {
   set(k, v) { try { localStorage.setItem('sdd:' + k, v); } catch {} },
 };
 
-const state = { files: new Map(), handle: null, specs: [], specId: store.get('spec'), view: store.get('view') || 'list', dir: store.get('dir') || 'h', doc: null };
+// The route lives in the hash: #/ is the homepage, #/spec/<id> one spec.
+const routeId = () => { const m = /^#\/spec\/(.+)$/.exec(location.hash); return m ? decodeURIComponent(m[1]) : null; };
+const go = (id) => { location.hash = id ? '#/spec/' + encodeURIComponent(id) : '#/'; };
+
+const state = { files: new Map(), handle: null, root: '', specs: [], specId: routeId(), view: store.get('view') || 'list', dir: store.get('dir') || 'h', filter: store.get('filter') || 'all', query: '', doc: null };
 
 // ---------- folder access ----------
 
@@ -102,6 +135,7 @@ async function loadHandle(handle) {
   await walk(specs, '', files);
   if (state.handle === handle && sameFiles(files, state.files)) return;
   state.handle = handle;
+  state.root = handle.name;
   setFiles(files);
 }
 
@@ -126,6 +160,7 @@ async function loadFileList(list) {
   }
   await Promise.all(reads);
   state.handle = null;
+  state.root = list[0]?.webkitRelativePath.split('/')[0] || '';
   if (!files.size) return empty('No markdown found under a <code>specs/</code> folder. Pick the <code>.sdd</code> folder.');
   setFiles(files);
 }
@@ -161,10 +196,34 @@ const field = (t, name) => (new RegExp(`^\\*\\*${name}:\\*\\*\\s*(.+)$`, 'mi').e
 const numOf = (name) => (/^(\d+)-/.exec(name) || [])[1];
 const unslug = (name) => name.replace(/^\d+-/, '').replace(/\.md$/, '').replace(/-/g, ' ');
 
+// The body of a `## name` section, up to the next heading of level 1 or 2.
+function section(t, name) {
+  const lines = t.split(/\r?\n/);
+  const i = lines.findIndex((l) => new RegExp(`^##\\s+${name}\\s*$`, 'i').test(l));
+  if (i < 0) return '';
+  const out = [];
+  for (const l of lines.slice(i + 1)) {
+    if (/^#{1,2}\s/.test(l)) break;
+    out.push(l);
+  }
+  return out.join('\n').trim();
+}
+
+// The first paragraph of some markdown, as plain text.
+const excerpt = (md) => md.split(/\n\s*\n/)[0].replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_`>#]/g, '').replace(/\s+/g, ' ').trim();
+
+function specStatus(ts) {
+  if (!ts.length) return 'draft';
+  if (ts.every((t) => t.status === 'done')) return 'done';
+  if (ts.some((t) => t.status === 'blocked')) return 'blocked';
+  if (ts.some((t) => isDoing(t.status) || t.status === 'done')) return 'active';
+  return 'ready';
+}
+
 function parse(files) {
   const specs = new Map();
   const spec = (dir) => {
-    if (!specs.has(dir)) specs.set(dir, { id: dir, num: numOf(dir), title: unslug(dir), key: null, path: null, milestones: new Map() });
+    if (!specs.has(dir)) specs.set(dir, { id: dir, num: numOf(dir), title: unslug(dir), key: null, path: null, summary: '', stories: 0, milestones: new Map() });
     return specs.get(dir);
   };
   for (const [path, text] of files) {
@@ -173,14 +232,19 @@ function parse(files) {
     const s = spec(p[0]);
     if (p.length === 2 && p[1] === 'spec.md') {
       s.path = path;
-      s.title = heading(text) || s.title;
+      s.title = (heading(text) || s.title).replace(/^Spec:\s*/i, '');
       s.key = /^none$/i.test(field(text, 'Key') || 'none') ? null : field(text, 'Key');
+      s.summary = excerpt(section(text, 'Problem Statement') || section(text, 'Solution'));
+      s.stories = (section(text, 'User Stories').match(/^\s*\d+\.\s/gm) || []).length;
     } else if (p.length === 4 && p[1] === 'milestones' && numOf(p[2])) {
-      if (!s.milestones.has(p[2])) s.milestones.set(p[2], { id: p[2], num: numOf(p[2]), title: unslug(p[2]), path: null, tickets: [] });
+      if (!s.milestones.has(p[2])) s.milestones.set(p[2], { id: p[2], num: numOf(p[2]), title: unslug(p[2]), path: null, delivers: '', pr: null, tickets: [] });
       const m = s.milestones.get(p[2]);
       if (p[3] === 'milestone.md') {
         m.path = path;
         m.title = (heading(text) || m.title).replace(/^Milestone\s+\d+:\s*/i, '');
+        m.delivers = excerpt(field(text, 'Delivers') || '');
+        const pr = field(text, 'PR') || 'none';
+        m.pr = /^none/i.test(pr) ? null : '#' + ((/\/pull\/(\d+)/.exec(pr) || /#?(\d+)/.exec(pr) || [, pr])[1]);
       } else if (numOf(p[3])) {
         const deps = field(text, 'Depends on') || '';
         const commit = field(text, 'Commit') || '';
@@ -202,6 +266,7 @@ function parse(files) {
       s.milestones = [...s.milestones.values()].sort((a, b) => a.num.localeCompare(b.num));
       s.milestones.forEach((m) => m.tickets.sort((a, b) => a.num.localeCompare(b.num)));
       s.tickets = s.milestones.flatMap((m) => m.tickets);
+      s.status = specStatus(s.tickets);
       return s;
     })
     .sort((a, b) => a.num.localeCompare(b.num));
@@ -210,7 +275,6 @@ function parse(files) {
 function setFiles(files) {
   state.files = files;
   state.specs = parse(files);
-  if (!state.specs.some((s) => s.id === state.specId)) state.specId = state.specs.at(-1)?.id;
   $('reload').classList.remove('hidden');
   $('live').classList.toggle('hidden', !state.handle);
   $('live').classList.toggle('inline-flex', !!state.handle);
@@ -220,8 +284,7 @@ function setFiles(files) {
 
 // ---------- rendering ----------
 
-const STATUS_ORDER = ['todo', 'doing', 'in progress', 'blocked', 'done'];
-const isDoing = (s) => s === 'doing' || s === 'in progress';
+const isDoing = (s) => s === 'doing';
 const statusTone = (s) =>
   s === 'done' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
   : s === 'todo' ? 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
@@ -235,15 +298,9 @@ const cardTone = (s) =>
   : s === 'blocked' ? 'border-red-400 dark:border-red-700'
   : 'border-zinc-200 dark:border-zinc-800';
 const num = (n) => `<span class="font-mono text-xs text-zinc-400">#${esc(n)}</span>`;
-const progress = (ts) => {
-  const done = ts.filter((t) => t.status === 'done').length;
-  const pct = ts.length ? Math.round((done / ts.length) * 100) : 0;
-  return `<span class="inline-flex items-center gap-2 text-xs text-zinc-500">
-    <span class="h-1.5 w-20 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden"><span class="block h-full bg-emerald-500" style="width:${pct}%"></span></span>${done}/${ts.length}</span>`;
-};
 
 function empty(msg) {
-  $('spec').classList.add('hidden');
+  $('crumbs').innerHTML = '';
   $('views').classList.add('hidden');
   $('main').innerHTML = `
     <div class="mx-auto max-w-md py-24 text-center space-y-4">
@@ -254,76 +311,341 @@ function empty(msg) {
 }
 
 function render() {
+  if (!state.specs.length) return empty('No specs yet. Run <code>/to-spec</code> to write one.');
   const spec = state.specs.find((s) => s.id === state.specId);
-  if (!spec) return empty('No specs yet. Run <code>/to-spec</code> to write one.');
+  $('crumbs').innerHTML = spec
+    ? `<span class="text-zinc-300 dark:text-zinc-700">/</span><span class="font-mono text-xs text-zinc-400">${esc(spec.num)}</span><span class="hidden sm:inline truncate max-w-xs text-zinc-600 dark:text-zinc-300">${esc(spec.title)}</span>`
+    : '';
+  $('views').classList.toggle('hidden', !spec);
+  if (!spec) return home();
 
-  const sel = $('spec');
-  sel.classList.remove('hidden');
-  sel.innerHTML = state.specs.map((s) => `<option value="${esc(s.id)}" ${s.id === spec.id ? 'selected' : ''}>${esc(s.num)} · ${esc(s.title)}</option>`).join('');
-  $('views').classList.remove('hidden');
   document.querySelectorAll('#views button').forEach((b) => {
     b.className = 'px-3 py-1 rounded ' + (b.dataset.view === state.view ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'hover:bg-zinc-100 dark:hover:bg-zinc-900');
   });
 
-  const head = `
-    <div class="mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-2">
-      <button data-open-spec class="text-left text-2xl font-semibold tracking-tight hover:underline">${esc(spec.title)}</button>
-      ${spec.key ? `<span class="font-mono text-sm text-zinc-500">${esc(spec.key)}</span>` : ''}
-      <span class="ml-auto">${progress(spec.tickets)}</span>
-    </div>`;
+  const head = specHero(spec);
 
   const body = !spec.tickets.length
-    ? `<p class="text-sm text-zinc-500">No tickets yet. Run <code>/to-tickets</code> on this spec.</p>`
+    ? `<div class="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 py-16 text-center text-sm text-zinc-500">No tickets yet. Run <code class="font-mono">/to-tickets</code> on this spec.</div>`
     : state.view === 'kanban' ? kanban(spec) : state.view === 'graph' ? graph(spec) : list(spec);
 
   const scroll = $('main').querySelector('[data-scroll]')?.scrollLeft;
   $('main').innerHTML = head + body;
   const scroller = $('main').querySelector('[data-scroll]');
   if (scroller && scroll) scroller.scrollLeft = scroll;
-  $('main').querySelector('[data-open-spec]').onclick = () => openDoc([['Spec', spec.path]]);
+  $('main').querySelector('[data-open-spec]').onclick = () => openDoc([specRef(spec)]);
+  $('main').querySelector('[data-home]').onclick = () => go(null);
+  wireTicketRefs($('main'));
   $('main').querySelectorAll('[data-ticket]').forEach((el) => (el.onclick = () => openTicket(spec, el.dataset.ticket)));
   $('main').querySelectorAll('[data-milestone]').forEach((el) => {
     const m = spec.milestones.find((m) => m.id === el.dataset.milestone);
-    el.onclick = () => openDoc([['Milestone', m.path], ['Spec', spec.path]]);
+    el.onclick = () => openDoc([milestoneRef(spec, m), specRef(spec)]);
   });
   if (state.view === 'graph') wireGraph();
 }
 
-function list(spec) {
-  return spec.milestones.map((m) => `
-    <section class="mb-8">
-      <button data-milestone="${esc(m.id)}" class="mb-2 flex w-full items-center gap-3 text-left group">
-        <span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span>
-        <span class="font-medium group-hover:underline">${esc(m.title)}</span>
-        <span class="ml-auto">${progress(m.tickets)}</span>
-      </button>
-      <ul class="divide-y divide-zinc-100 dark:divide-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-        ${m.tickets.map((t) => `
-          <li data-ticket="${esc(t.num)}" class="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 ${isDoing(t.status) ? 'doing border-l-4 border-l-amber-500' : t.status === 'blocked' ? 'border-l-4 border-l-red-500' : ''}">
-            ${num(t.num)}
-            <span class="min-w-0 flex-1 truncate text-sm">${esc(t.title)}</span>
-            ${t.deps.length ? `<span class="hidden sm:inline font-mono text-xs text-zinc-400">← ${t.deps.map(esc).join(', ')}</span>` : ''}
-            ${t.commit ? `<span class="hidden md:inline font-mono text-xs text-zinc-400">${esc(t.commit)}</span>` : ''}
-            ${pill(t.status)}
-          </li>`).join('')}
-      </ul>
-    </section>`).join('');
+// ---------- homepage ----------
+
+const SPEC_STATUS = {
+  active: { label: 'In progress', tone: statusTone('doing'), accent: 'from-amber-400 to-orange-500' },
+  blocked: { label: 'Blocked', tone: statusTone('blocked'), accent: 'from-red-400 to-rose-500' },
+  ready: { label: 'Ready to build', tone: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300', accent: 'from-sky-400 to-indigo-500' },
+  draft: { label: 'Needs tickets', tone: statusTone('todo'), accent: 'from-zinc-300 to-zinc-400 dark:from-zinc-700 dark:to-zinc-600' },
+  done: { label: 'Done', tone: statusTone('done'), accent: 'from-emerald-400 to-teal-500' },
+};
+const doneOf = (ts) => ts.filter((t) => t.status === 'done').length;
+const pctOf = (ts) => (ts.length ? Math.round((doneOf(ts) / ts.length) * 100) : 0);
+
+function ring(pct, size, stroke, label = '') {
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r;
+  return `<span class="relative inline-grid shrink-0 place-items-center" style="width:${size}px;height:${size}px">
+    <svg width="${size}" height="${size}" class="absolute inset-0 -rotate-90">
+      <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${stroke}" class="stroke-zinc-200 dark:stroke-zinc-800"/>
+      <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${stroke}" stroke-linecap="round" class="stroke-emerald-500"
+        stroke-dasharray="${c}" stroke-dashoffset="${pct ? c * (1 - pct / 100) : c}" style="transition:stroke-dashoffset .6s"/>
+    </svg>${label}</span>`;
 }
 
+// A milestone's bar: done tickets fill it green, tickets in progress amber.
+const fill = (m, h) => {
+  const n = m.tickets.length || 1;
+  const busy = m.tickets.filter((t) => isDoing(t.status)).length;
+  return `<div class="flex ${h} overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+    <div class="h-full bg-emerald-500" style="width:${(doneOf(m.tickets) / n) * 100}%"></div><div class="h-full bg-amber-500 animate-pulse" style="width:${(busy / n) * 100}%"></div></div>`;
+};
+
+// One segment per milestone, as wide as its ticket count.
+const segments = (s) => `<div class="flex gap-1">${s.milestones.map((m) =>
+  `<div title="M${esc(m.num)} · ${esc(m.title)} — ${doneOf(m.tickets)}/${m.tickets.length}" style="flex:${Math.max(1, m.tickets.length)} 1 0">${fill(m, 'h-1.5')}</div>`).join('')}</div>`;
+
+// One icon per ticket status: a check when done, a pulsing ring while in progress, a bang when blocked, a dashed ring before.
+const statusIcon = (s, size = 'h-5 w-5') =>
+  s === 'done' ? `<span class="grid ${size} shrink-0 place-items-center rounded-full bg-emerald-500 text-white"><svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5l2.2 2.2 4.8-5.2"/></svg></span>`
+  : isDoing(s) ? `<span class="grid ${size} shrink-0 place-items-center rounded-full border-2 border-amber-500"><span class="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span></span>`
+  : s === 'blocked' ? `<span class="grid ${size} shrink-0 place-items-center rounded-full bg-red-500 text-[11px] font-bold text-white">!</span>`
+  : `<span class="${size} shrink-0 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-600"></span>`;
+
+const MILESTONE_LABEL = { active: 'In progress', blocked: 'Blocked', ready: 'Not started', draft: 'No tickets', done: 'Complete' };
+const plural = (n, w, ws = w + 's') => `${n} ${n === 1 ? w : ws}`;
+
+function specHero(spec) {
+  const st = SPEC_STATUS[spec.status];
+  const ts = spec.tickets;
+  const doing = ts.filter((t) => isDoing(t.status));
+  const blocked = ts.filter((t) => t.status === 'blocked');
+  const msDone = spec.milestones.filter((m) => m.tickets.length && m.tickets.every((t) => t.status === 'done')).length;
+  const of = (n, total) => `${n}<span class="text-sm font-normal text-zinc-400">/${total}</span>`;
+  const stat = (label, value, tone = '') => `<div><dt class="text-xs text-zinc-500">${label}</dt><dd class="mt-0.5 text-xl font-semibold tabular-nums tracking-tight ${tone}">${value}</dd></div>`;
+  const live = [...doing, ...blocked];
+  return `
+    <button data-home class="mb-3 inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">← All specs</button>
+    <section class="relative mb-8 overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 p-6 sm:p-8">
+      <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${st.accent}"></div>
+      <div class="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl"></div>
+      <div class="pointer-events-none absolute -bottom-32 left-1/4 h-72 w-72 rounded-full bg-sky-400/15 blur-3xl"></div>
+      <div class="relative flex flex-wrap items-center gap-6">
+        ${ring(pctOf(ts), 88, 8, `<span class="text-center leading-tight"><span class="block text-xl font-semibold tabular-nums">${pctOf(ts)}%</span><span class="text-[9px] uppercase tracking-widest text-zinc-500">done</span></span>`)}
+        <div class="min-w-0 flex-1 basis-72">
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="font-mono uppercase tracking-widest text-zinc-500">Spec ${esc(spec.num)}</span>
+            ${spec.key ? `<span class="rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 font-mono text-zinc-600 dark:text-zinc-300">${esc(spec.key)}</span>` : ''}
+            <span class="rounded-full px-2 py-0.5 font-medium ${st.tone}">${st.label}</span>
+          </div>
+          <button data-open-spec class="mt-2 text-left text-3xl font-semibold tracking-tight decoration-zinc-300 underline-offset-4 hover:underline dark:decoration-zinc-600" title="Read the spec">${esc(spec.title)}</button>
+          ${spec.summary ? `<p class="mt-2 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2">${esc(spec.summary)}</p>` : ''}
+        </div>
+        <dl class="flex flex-wrap gap-x-8 gap-y-3 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 px-5 py-3 backdrop-blur">
+          ${stat('Tickets', of(doneOf(ts), ts.length))}
+          ${stat('Milestones', of(msDone, spec.milestones.length))}
+          ${stat('Doing', doing.length, doing.length ? 'text-amber-600 dark:text-amber-400' : '')}
+          ${stat('Blocked', blocked.length, blocked.length ? 'text-red-600 dark:text-red-400' : '')}
+          ${spec.stories ? stat('Stories', spec.stories) : ''}
+        </dl>
+      </div>
+      ${spec.milestones.length ? `
+        <div class="relative mt-7 flex gap-2">${spec.milestones.map((m) => `
+          <button data-milestone="${esc(m.id)}" class="group min-w-0 text-left" style="flex:${Math.max(1, m.tickets.length)} 1 0" title="M${esc(m.num)} · ${esc(m.title)} — ${doneOf(m.tickets)}/${m.tickets.length}">
+            ${fill(m, 'h-2')}
+            <div class="mt-2 flex items-center gap-1.5 text-xs"><span class="font-mono text-zinc-400">M${esc(m.num)}</span><span class="truncate text-zinc-600 dark:text-zinc-300 group-hover:underline">${esc(m.title)}</span></div>
+          </button>`).join('')}
+        </div>` : ''}
+      ${live.length ? `
+        <div class="relative mt-6 border-t border-zinc-200 dark:border-zinc-800 pt-4">
+          <p class="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-500">Now building</p>
+          <div class="grid gap-1 sm:grid-cols-2">${live.map((t) => ticketChip(t, `<span class="hidden md:inline truncate max-w-[40%] text-xs text-zinc-400">M${esc(t.milestone.num)} · ${esc(t.milestone.title)}</span>`)).join('')}</div>
+        </div>` : ''}
+    </section>`;
+}
+
+const ticketChip = (t, extra = '') => `
+  <button data-ticket-ref="${esc(t.spec.id)}|${esc(t.num)}" class="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800/70">
+    <span class="h-1.5 w-1.5 shrink-0 rounded-full ${t.status === 'blocked' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'}"></span>
+    <span class="font-mono text-xs text-zinc-400">#${esc(t.num)}</span><span class="min-w-0 flex-1 truncate">${esc(t.title)}</span>${extra}
+  </button>`;
+
+function home() {
+  if (!$('home')) {
+    $('main').innerHTML = `<div id="home">
+      <section id="hero"></section>
+      <div class="mt-10 mb-4 flex flex-wrap items-center gap-3">
+        <h2 class="text-lg font-semibold tracking-tight">Specs</h2>
+        <div id="filters" class="flex flex-wrap gap-1.5"></div>
+        <label class="relative ml-auto w-full sm:w-64">
+          <svg class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.4 9.83l3.13 3.14a.75.75 0 1 0 1.06-1.06l-3.13-3.14A5.5 5.5 0 0 0 9 3.5ZM5 9a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/></svg>
+          <input id="search" type="search" placeholder="Search specs…" class="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-1.5 pl-8 pr-8 text-sm outline-none focus:border-zinc-400 dark:focus:border-zinc-600">
+          <kbd class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-zinc-200 dark:border-zinc-700 px-1 font-mono text-[10px] text-zinc-400">/</kbd>
+        </label>
+      </div>
+      <div id="grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+    </div>`;
+    $('search').value = state.query;
+    $('search').oninput = (e) => { state.query = e.target.value; homeGrid(); };
+  }
+  homeHero();
+  homeGrid();
+}
+
+function homeHero() {
+  const all = state.specs.flatMap((s) => s.tickets);
+  const ms = state.specs.flatMap((s) => s.milestones);
+  const doing = all.filter((t) => isDoing(t.status));
+  const blocked = all.filter((t) => t.status === 'blocked');
+  const pct = pctOf(all);
+  const headline = doing.length ? `${doing.length} ticket${doing.length === 1 ? '' : 's'} in flight`
+    : all.length && pct === 100 ? 'Everything shipped'
+    : blocked.length ? 'Waiting on you'
+    : all.length ? 'Ready to build' : 'Specs await tickets';
+  const tile = (label, value, sub, tone = '') => `
+    <div class="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 px-4 py-3 backdrop-blur">
+      <dt class="text-xs text-zinc-500">${label}</dt>
+      <dd class="mt-1 text-2xl font-semibold tabular-nums tracking-tight ${tone}">${value}</dd>
+      <dd class="text-xs text-zinc-400">${sub}</dd>
+    </div>`;
+  const attention = [...doing, ...blocked];
+
+  $('hero').innerHTML = `
+    <div class="relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 p-6 sm:p-8">
+      <div class="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl"></div>
+      <div class="pointer-events-none absolute -bottom-32 left-1/4 h-72 w-72 rounded-full bg-sky-400/15 blur-3xl"></div>
+      <div class="relative flex flex-wrap items-center gap-8">
+        <div class="flex items-center gap-5">
+          ${ring(pct, 104, 9, `<span class="text-center leading-tight"><span class="block text-2xl font-semibold tabular-nums">${pct}%</span><span class="text-[10px] uppercase tracking-widest text-zinc-500">done</span></span>`)}
+          <div>
+            ${state.root ? `<p class="font-mono text-xs uppercase tracking-widest text-zinc-500">${esc(state.root)}</p>` : ''}
+            <h1 class="mt-1 text-3xl font-semibold tracking-tight">${headline}</h1>
+            <p class="mt-1 text-sm text-zinc-500">${doneOf(all)} of ${all.length} tickets done across ${state.specs.length} spec${state.specs.length === 1 ? '' : 's'}.</p>
+          </div>
+        </div>
+        <dl class="grid w-full grid-cols-2 gap-3 sm:grid-cols-4 lg:ml-auto lg:w-auto">
+          ${tile('Specs', state.specs.length, `${state.specs.filter((s) => s.status === 'done').length} done`)}
+          ${tile('Milestones', ms.length, `${ms.filter((m) => m.tickets.length && m.tickets.every((t) => t.status === 'done')).length} done`)}
+          ${tile('Doing', doing.length, 'tickets', doing.length ? 'text-amber-600 dark:text-amber-400' : '')}
+          ${tile('Blocked', blocked.length, 'tickets', blocked.length ? 'text-red-600 dark:text-red-400' : '')}
+        </dl>
+      </div>
+      ${attention.length ? `
+        <div class="relative mt-6 border-t border-zinc-200 dark:border-zinc-800 pt-4">
+          <p class="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-500">Now building</p>
+          <div class="grid gap-1 sm:grid-cols-2">${attention.map((t) => ticketChip(t, `<span class="hidden md:inline truncate max-w-[40%] text-xs text-zinc-400">${esc(t.spec.title)}</span>`)).join('')}</div>
+        </div>` : ''}
+    </div>`;
+  wireTicketRefs($('hero'));
+}
+
+function homeGrid() {
+  const counts = {};
+  state.specs.forEach((s) => (counts[s.status] = (counts[s.status] || 0) + 1));
+  const filter = state.filter === 'all' || counts[state.filter] ? state.filter : 'all';
+  const chip = (key, label, n) => `<button data-filter="${key}" class="rounded-full border px-3 py-1 text-xs font-medium transition ${filter === key
+    ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
+    : 'border-zinc-200 text-zinc-600 hover:border-zinc-400 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600'}">${label} <span class="ml-0.5 opacity-60">${n}</span></button>`;
+  $('filters').innerHTML = chip('all', 'All', state.specs.length)
+    + Object.entries(SPEC_STATUS).filter(([k]) => counts[k]).map(([k, v]) => chip(k, v.label, counts[k])).join('');
+  $('filters').querySelectorAll('[data-filter]').forEach((b) => (b.onclick = () => { state.filter = b.dataset.filter; store.set('filter', state.filter); homeGrid(); }));
+
+  const q = state.query.trim().toLowerCase();
+  const specs = state.specs
+    .filter((s) => filter === 'all' || s.status === filter)
+    .filter((s) => !q || [s.num, s.title, s.key, s.summary].some((f) => f?.toLowerCase().includes(q)))
+    .reverse();
+  $('grid').innerHTML = specs.length ? specs.map(card).join('')
+    : `<div class="col-span-full rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 py-16 text-center text-sm text-zinc-500">No specs match.</div>`;
+  $('grid').querySelectorAll('[data-spec]').forEach((el) => {
+    el.onclick = () => go(el.dataset.spec);
+    el.onkeydown = (e) => e.key === 'Enter' && e.target === el && go(el.dataset.spec);
+  });
+  wireTicketRefs($('grid'));
+}
+
+function card(s) {
+  const st = SPEC_STATUS[s.status];
+  const live = s.tickets.filter((t) => isDoing(t.status) || t.status === 'blocked');
+  const next = s.milestones.find((m) => m.tickets.some((t) => t.status !== 'done'));
+  const foot = live.length ? `<div class="space-y-0.5">${live.slice(0, 3).map((t) => ticketChip(t)).join('')}${live.length > 3 ? `<p class="px-2 text-xs text-zinc-400">+${live.length - 3} more</p>` : ''}</div>`
+    : s.status === 'draft' ? `<p class="text-xs text-zinc-500">Run <code class="font-mono">/to-tickets</code> to plan the build.</p>`
+    : s.status === 'done' ? `<p class="text-xs text-emerald-600 dark:text-emerald-400">✓ All ${plural(s.milestones.length, 'milestone')} complete</p>`
+    : next ? `<p class="truncate text-xs text-zinc-500">Next up · <span class="font-mono text-zinc-400">M${esc(next.num)}</span> ${esc(next.title)}</p>` : '';
+
+  return `
+    <article data-spec="${esc(s.id)}" tabindex="0" class="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 outline-none transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg hover:shadow-zinc-900/5 focus-visible:ring-2 focus-visible:ring-emerald-500 dark:hover:border-zinc-700 dark:hover:shadow-black/40">
+      <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${st.accent}"></div>
+      <div class="flex items-center gap-2 text-xs">
+        <span class="font-mono text-zinc-400">${esc(s.num)}</span>
+        ${s.key ? `<span class="rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 font-mono text-zinc-600 dark:text-zinc-300">${esc(s.key)}</span>` : ''}
+        <span class="ml-auto rounded-full px-2 py-0.5 font-medium ${st.tone}">${st.label}</span>
+      </div>
+      <h3 class="mt-3 text-lg font-semibold leading-snug tracking-tight line-clamp-2 transition group-hover:text-emerald-700 dark:group-hover:text-emerald-400">${esc(s.title)}</h3>
+      ${s.summary ? `<p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-3">${esc(s.summary)}</p>` : ''}
+      <div class="mt-auto pt-5">
+        ${s.milestones.length ? segments(s) : ''}
+        <div class="mt-4 flex items-center gap-3">
+          ${ring(pctOf(s.tickets), 40, 4, `<span class="text-[10px] font-semibold tabular-nums">${pctOf(s.tickets)}%</span>`)}
+          <div class="text-xs leading-tight">
+            <div class="font-medium text-zinc-700 dark:text-zinc-200">${doneOf(s.tickets)}/${plural(s.tickets.length, 'ticket')}</div>
+            <div class="text-zinc-500">${plural(s.milestones.length, 'milestone')}${s.stories ? ` · ${plural(s.stories, 'story', 'stories')}` : ''}</div>
+          </div>
+        </div>
+        ${foot ? `<div class="mt-4 border-t border-zinc-100 dark:border-zinc-800 pt-3">${foot}</div>` : ''}
+      </div>
+    </article>`;
+}
+
+// Ticket shortcuts open the drawer in place, without leaving the homepage.
+function wireTicketRefs(root) {
+  root.querySelectorAll('[data-ticket-ref]').forEach((el) => (el.onclick = (e) => {
+    e.stopPropagation();
+    const [id, n] = el.dataset.ticketRef.split('|');
+    openTicket(state.specs.find((s) => s.id === id), n);
+  }));
+}
+
+const depChips = (t) => t.deps.length
+  ? `<span class="inline-flex items-center gap-1 text-xs text-zinc-400" title="Depends on">←${t.deps.map((d) => `<span class="rounded bg-zinc-100 dark:bg-zinc-800 px-1 font-mono text-zinc-500">${esc(d)}</span>`).join('')}</span>` : '';
+const commitChip = (t) => t.commit
+  ? `<span class="inline-flex items-center gap-1 rounded border border-zinc-200 dark:border-zinc-800 px-1.5 font-mono text-xs text-zinc-500" title="Commit">
+      <svg class="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M1 8h4.5M10.5 8H15"/></svg>${esc(t.commit)}</span>` : '';
+const milestoneChip = (m) => `<span class="truncate rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">M${esc(m.num)} · ${esc(m.title)}</span>`;
+
+function list(spec) {
+  return `<div class="space-y-5">${spec.milestones.map((m) => {
+    const st = specStatus(m.tickets);
+    return `
+    <section class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40">
+      <button data-milestone="${esc(m.id)}" class="group flex w-full items-center gap-4 px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900/60">
+        ${ring(pctOf(m.tickets), 40, 4, `<span class="text-[10px] font-semibold tabular-nums">${pctOf(m.tickets)}%</span>`)}
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span>
+            <span class="font-semibold tracking-tight group-hover:underline">${esc(m.title)}</span>
+            <span class="rounded-full px-2 py-0.5 text-xs font-medium ${SPEC_STATUS[st].tone}">${MILESTONE_LABEL[st]}</span>
+          </div>
+          ${m.delivers ? `<p class="mt-0.5 truncate text-sm text-zinc-500">${esc(m.delivers)}</p>` : ''}
+        </div>
+        ${m.pr ? `<span class="hidden sm:inline rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 font-mono text-xs text-zinc-500">PR ${esc(m.pr)}</span>` : ''}
+        <span class="text-xs tabular-nums text-zinc-500">${doneOf(m.tickets)}/${m.tickets.length}</span>
+      </button>
+      <ul class="divide-y divide-zinc-100 dark:divide-zinc-800/70 border-t border-zinc-100 dark:border-zinc-800">
+        ${m.tickets.map((t) => `
+          <li data-ticket="${esc(t.num)}" class="flex cursor-pointer items-center gap-3 px-5 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 ${isDoing(t.status) ? 'doing border-l-4 border-l-amber-500' : t.status === 'blocked' ? 'border-l-4 border-l-red-500 bg-red-50/50 dark:bg-red-950/20' : ''}">
+            ${statusIcon(t.status)}
+            ${num(t.num)}
+            <span class="min-w-0 flex-1 truncate text-sm ${t.status === 'done' ? 'text-zinc-500' : ''}">${esc(t.title)}</span>
+            <span class="hidden sm:inline-flex">${depChips(t)}</span>
+            <span class="hidden md:inline-flex">${commitChip(t)}</span>
+            ${pill(t.status)}
+          </li>`).join('')}
+        ${m.tickets.length ? '' : '<li class="px-5 py-3 text-sm text-zinc-500">No tickets in this milestone.</li>'}
+      </ul>
+    </section>`;
+  }).join('')}</div>`;
+}
+
+const columnAccent = (c) => (c === 'done' ? 'bg-emerald-500' : isDoing(c) ? 'bg-amber-500' : c === 'blocked' ? 'bg-red-500' : 'bg-zinc-300 dark:bg-zinc-700');
+
+// One column per ticket status, always shown, so the board keeps its shape as work moves.
+const COLUMNS = [
+  { key: 'todo', label: 'Todo', empty: 'Nothing queued' },
+  { key: 'doing', label: 'Doing', empty: 'Nothing being built' },
+  { key: 'blocked', label: 'Blocked', empty: 'Nothing blocked' },
+  { key: 'done', label: 'Done', empty: 'Nothing done yet' },
+];
+
 function kanban(spec) {
-  const found = new Set(spec.tickets.map((t) => t.status));
-  const cols = [...new Set(['todo', ...STATUS_ORDER.filter((s) => found.has(s)), ...[...found].filter((s) => !STATUS_ORDER.includes(s)), 'done'])];
-  cols.push(cols.splice(cols.indexOf('done'), 1)[0]);
-  return `<div data-scroll class="grid gap-4" style="grid-template-columns:repeat(${cols.length},minmax(220px,1fr));overflow-x:auto">
-    ${cols.map((c) => {
-      const ts = spec.tickets.filter((t) => t.status === c);
-      return `<div class="rounded-lg bg-zinc-50 dark:bg-zinc-900/50 p-3">
-        <div class="mb-3 flex items-center gap-2 text-sm font-medium">${pill(c)}<span class="text-zinc-400 text-xs">${ts.length}</span></div>
-        <div class="space-y-2">${ts.map((t) => `
-          <div data-ticket="${esc(t.num)}" class="cursor-pointer rounded-md border ${cardTone(t.status)} bg-white dark:bg-zinc-950 p-3 hover:border-zinc-400 dark:hover:border-zinc-600">
-            <div class="flex items-center gap-2">${num(t.num)}<span class="truncate text-xs text-zinc-400">M${esc(t.milestone.num)} · ${esc(t.milestone.title)}</span></div>
-            <div class="mt-1 text-sm">${esc(t.title)}</div>
-          </div>`).join('')}</div>
+  return `<div data-scroll class="grid gap-4 pb-2" style="grid-template-columns:repeat(${COLUMNS.length},minmax(240px,1fr));overflow-x:auto">
+    ${COLUMNS.map((c) => {
+      const ts = spec.tickets.filter((t) => t.status === c.key);
+      return `<div class="flex flex-col overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40">
+        <div class="h-1 ${columnAccent(c.key)}"></div>
+        <div class="flex items-center gap-2 px-3 pb-2 pt-3 text-sm font-medium">
+          ${statusIcon(c.key, 'h-4 w-4')}<span>${esc(c.label)}</span>
+          <span class="ml-auto rounded-full bg-zinc-200/70 dark:bg-zinc-800 px-2 text-xs tabular-nums text-zinc-500">${ts.length}</span>
+        </div>
+        <div class="flex-1 space-y-2 p-3 pt-1">${ts.map((t) => `
+          <div data-ticket="${esc(t.num)}" class="cursor-pointer rounded-lg border ${cardTone(t.status)} bg-white dark:bg-zinc-950 p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:shadow-black/30">
+            <div class="flex min-w-0 items-center gap-2">${num(t.num)}<span class="ml-auto min-w-0 max-w-[75%] truncate">${milestoneChip(t.milestone)}</span></div>
+            <div class="mt-1.5 text-sm font-medium leading-snug">${esc(t.title)}</div>
+            ${t.deps.length || t.commit ? `<div class="mt-2.5 flex items-center gap-2">${depChips(t)}<span class="ml-auto">${commitChip(t)}</span></div>` : ''}
+          </div>`).join('') || `<div class="rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 py-6 text-center text-xs text-zinc-400">${c.empty}</div>`}</div>
       </div>`;
     }).join('')}
   </div>`;
@@ -434,10 +756,25 @@ function graph(spec) {
   }
 
   const dirBtn = (d, label) => `<button data-dir="${d}" class="px-2 py-0.5 rounded ${state.dir === d ? 'bg-zinc-200 dark:bg-zinc-800' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'}">${label}</button>`;
-  return `<div class="mb-3 flex justify-end"><div class="inline-flex rounded-md border border-zinc-200 dark:border-zinc-800 p-0.5 text-xs">${dirBtn('h', 'Horizontal')}${dirBtn('v', 'Vertical')}</div></div>
-  <div data-scroll class="overflow-x-auto pb-4"><div id="graph" class="relative" style="width:${W}px;height:${H}px">
+  const legend = COLUMNS.map((c) => `<span class="inline-flex items-center gap-1.5">${statusIcon(c.key, 'h-3.5 w-3.5')}${esc(c.label)}</span>`).join('');
+  // Alternate milestones get a faint band, so it reads which tickets belong together.
+  const bands = spans.map(({ start, end }, i) => {
+    if (i % 2) return '';
+    const a = Math.max(-gap / 2, g.layer(start) - gap / 2), b = g.layer(end) - gap / 2;
+    return v
+      ? `<rect x="-16" y="${a}" width="${W + 32}" height="${b - a}" rx="10" class="fill-zinc-500/5"/>`
+      : `<rect x="${a}" y="-16" width="${b - a}" height="${H + 32}" rx="10" class="fill-zinc-500/5"/>`;
+  }).join('');
+  return `<div class="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30">
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-200 dark:border-zinc-800 px-4 py-2.5 text-xs text-zinc-500">
+    ${legend}
+    <span class="hidden lg:inline text-zinc-400">· Hover a ticket to trace its dependencies</span>
+    <div class="ml-auto inline-flex rounded-md border border-zinc-200 dark:border-zinc-800 p-0.5">${dirBtn('h', 'Horizontal')}${dirBtn('v', 'Vertical')}</div>
+  </div>
+  <div data-scroll class="dots overflow-x-auto p-8"><div id="graph" class="relative" style="width:${W}px;height:${H}px">
     <svg class="absolute inset-0 overflow-visible text-zinc-400" width="${W}" height="${H}">
       <defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+      ${bands}
       ${spans.slice(1).map(({ start }) => {
         const p = g.layer(start) - gap / 2;
         return v
@@ -450,17 +787,20 @@ function graph(spec) {
       const a = g.layer(start), len = g.layer(end) - gap - a;
       const box = v ? `left:0;top:${a}px;width:${G.gutter - 24}px;height:${len}px` : `left:${a}px;top:0;width:${len}px`;
       return `
-      <button data-milestone="${esc(m.id)}" class="absolute flex ${v ? 'flex-col items-start justify-center gap-0.5' : 'items-center justify-center gap-2'} text-left text-sm hover:underline" style="${box}">
-        <span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span><span class="${v ? 'line-clamp-2' : 'truncate'} font-medium">${esc(m.title)}</span>
+      <button data-milestone="${esc(m.id)}" class="group absolute flex ${v ? 'items-center' : 'items-start justify-center'}" style="${box}">
+        <span class="flex max-w-full ${v ? 'flex-col items-start gap-1 rounded-lg px-3 py-2' : 'items-center gap-2 rounded-full px-3 py-1'} border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/90 text-left text-sm shadow-sm group-hover:border-zinc-400 dark:group-hover:border-zinc-500">
+          <span class="flex shrink-0 items-center gap-1.5">${ring(pctOf(m.tickets), 14, 2.5)}<span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span></span>
+          <span class="${v ? 'line-clamp-2' : 'truncate'} font-medium">${esc(m.title)}</span>
+        </span>
       </button>`;
     }).join('')}
     ${[...pos.values()].map(({ x, y, t }) => `
-      <div data-ticket="${esc(t.num)}" class="node absolute cursor-pointer rounded-md border bg-white dark:bg-zinc-950 px-3 py-2 hover:border-zinc-500 ${cardTone(t.status)}"
+      <div data-ticket="${esc(t.num)}" class="node absolute cursor-pointer rounded-lg border bg-white dark:bg-zinc-950 px-3 py-2 shadow-sm hover:border-zinc-500 hover:shadow-md ${cardTone(t.status)}"
         style="left:${x}px;top:${y}px;width:${G.colW}px;height:${G.cardH}px">
-        <div class="flex items-center gap-2">${num(t.num)}<span class="ml-auto">${pill(t.status)}</span></div>
-        <div class="mt-0.5 truncate text-sm">${esc(t.title)}</div>
+        <div class="flex items-center gap-1.5">${statusIcon(t.status, 'h-3.5 w-3.5')}${num(t.num)}<span class="ml-auto">${t.commit ? commitChip(t) : pill(t.status)}</span></div>
+        <div class="mt-1 truncate text-sm font-medium">${esc(t.title)}</div>
       </div>`).join('')}
-  </div></div>`;
+  </div></div></div>`;
 }
 
 function wireGraph() {
@@ -481,34 +821,150 @@ function wireGraph() {
 
 // ---------- drawer ----------
 
-function openTicket(spec, n) {
-  const t = spec.tickets.find((t) => t.num === n);
-  openDoc([['Ticket ' + t.num, t.path], ['Milestone', t.milestone.path], ['Spec', spec.path]]);
+// A drawer tab names a spec, one of its milestones or one of its tickets, so it still resolves after a re-parse.
+const specRef = (spec) => ({ kind: 'spec', spec: spec.id });
+const milestoneRef = (spec, m) => ({ kind: 'milestone', spec: spec.id, id: m.id });
+const ticketRef = (spec, n) => ({ kind: 'ticket', spec: spec.id, id: n });
+
+function resolve(ref) {
+  const spec = state.specs.find((s) => s.id === ref.spec);
+  if (!spec) return null;
+  const badge = (tone, label) => `<span class="rounded-full px-2 py-0.5 text-xs font-medium ${tone}">${label}</span>`;
+  const count = (ts) => `<span class="inline-flex items-center gap-1.5 text-xs text-zinc-500">${ring(pctOf(ts), 14, 2.5)}${doneOf(ts)}/${plural(ts.length, 'ticket')} done</span>`;
+  const sep = '<span class="text-zinc-300 dark:text-zinc-700">·</span>';
+  if (ref.kind === 'spec') {
+    const st = SPEC_STATUS[spec.status];
+    return {
+      label: 'Spec', path: spec.path, accent: 'bg-gradient-to-r ' + st.accent, title: spec.title,
+      kicker: `<span class="font-mono">Spec ${esc(spec.num)}</span>`,
+      badges: badge(st.tone, st.label) + (spec.key ? `<span class="rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 font-mono text-xs text-zinc-600 dark:text-zinc-300">${esc(spec.key)}</span>` : '') + count(spec.tickets),
+    };
+  }
+  if (ref.kind === 'milestone') {
+    const m = spec.milestones.find((m) => m.id === ref.id);
+    if (!m) return null;
+    const st = specStatus(m.tickets);
+    return {
+      label: 'Milestone', path: m.path, accent: 'bg-gradient-to-r ' + SPEC_STATUS[st].accent, title: m.title,
+      kicker: `<span class="font-mono">Milestone M${esc(m.num)}</span>${sep}<span class="truncate">${esc(spec.title)}</span>`,
+      badges: badge(SPEC_STATUS[st].tone, MILESTONE_LABEL[st]) + count(m.tickets) + (m.pr ? `<span class="rounded-md border border-zinc-200 dark:border-zinc-700 px-1.5 font-mono text-xs text-zinc-500">PR ${esc(m.pr)}</span>` : ''),
+    };
+  }
+  const t = spec.tickets.find((t) => t.num === ref.id);
+  if (!t) return null;
+  return {
+    label: `Ticket #${t.num}`, path: t.path, accent: columnAccent(t.status), title: t.title,
+    kicker: `${statusIcon(t.status, 'h-3.5 w-3.5')}<span class="font-mono">Ticket #${esc(t.num)}</span>${sep}<span class="truncate">M${esc(t.milestone.num)} · ${esc(t.milestone.title)}</span>`,
+    badges: pill(t.status) + depChips(t) + commitChip(t),
+  };
 }
 
-function openDoc(tabs) {
-  state.doc = { tabs: tabs.filter(([, p]) => p), active: 0 };
-  if (!state.doc.tabs.length) return (state.doc = null);
-  $('drawer').classList.remove('hidden');
+// Splits a file into the fields the drawer shows as a details box (front matter and the leading
+// `**Field:** value` lines) and the markdown body below them. The title is dropped: the header shows it.
+const HEADER_FIELDS = /^(status|milestone|key|feature|title)$/i;
+function splitDoc(text) {
+  let body = text.replace(/^﻿/, '');
+  const meta = [];
+  const fm = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(body);
+  if (fm) {
+    body = body.slice(fm[0].length);
+    for (const l of fm[1].split(/\r?\n/)) {
+      const m = /^([\w-]+):\s*(.*)$/.exec(l);
+      if (m) meta.push([m[1], m[2].replace(/^(["'])(.*)\1$/, '$2') || '—']);
+    }
+  }
+  const lines = body.replace(/^\s*#\s+.+(\r?\n|$)/, '').split(/\r?\n/);
+  let i = 0;
+  for (; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const m = /^\*\*([^*]+?):\*\*\s*(.*)$/.exec(lines[i]);
+    if (!m) break;
+    meta.push([m[1], m[2]]);
+  }
+  return { meta: meta.filter(([k, v]) => !HEADER_FIELDS.test(k) && !/^none\.?$/i.test(v)), body: lines.slice(i).join('\n') };
+}
+
+// Markdown task-list checkboxes render disabled, which browsers grey out; these draw them as icons instead.
+const tasks = (html) => html.replace(/<input (checked="" )?disabled="" type="checkbox">/g, (_, on) => on
+  ? '<span class="task checked"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5l2.2 2.2 4.8-5.2"/></svg></span>'
+  : '<span class="task"></span>');
+
+function openTicket(spec, n, active = 0) {
+  const t = spec.tickets.find((t) => t.num === n);
+  openDoc([ticketRef(spec, n), milestoneRef(spec, t.milestone), specRef(spec)], active);
+}
+
+function openDoc(refs, active = 0) {
+  refs = refs.filter((r) => resolve(r)?.path);
+  if (!refs.length) return;
+  state.doc = { refs, active: Math.min(active, refs.length - 1) };
+  const d = $('drawer');
+  clearTimeout(d.closing);
+  d.classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('open')));
   renderDoc();
 }
 
+// Moves the drawer to the previous or next ticket of the spec, keeping the tab that was open.
+function stepTicket(delta) {
+  const ref = state.doc?.refs[0];
+  if (ref?.kind !== 'ticket') return;
+  const spec = state.specs.find((s) => s.id === ref.spec);
+  const ts = spec?.tickets || [];
+  const t = ts[ts.findIndex((t) => t.num === ref.id) + delta];
+  if (t) openTicket(spec, t.num, state.doc.active);
+}
+
 function renderDoc(keepScroll) {
-  const { tabs, active } = state.doc;
-  $('tabs').innerHTML = tabs.map(([label], i) => `<button data-tab="${i}" class="rounded px-2.5 py-1 ${i === active ? 'bg-zinc-100 dark:bg-zinc-900 font-medium' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'}">${esc(label)}</button>`).join('');
+  const { refs, active } = state.doc;
+  const tabs = refs.map(resolve);
+  const cur = tabs[active];
+
+  $('tabs').innerHTML = tabs.map((tab, i) => `<button data-tab="${i}" class="-mb-px border-b-2 pb-2.5 transition ${i === active
+    ? 'border-emerald-500 font-medium text-zinc-900 dark:text-zinc-100'
+    : 'border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-100'}">${esc(tab?.label ?? 'Missing')}</button>`).join('');
   $('tabs').querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => { state.doc.active = +b.dataset.tab; renderDoc(); }));
-  const text = state.files.get(tabs[active][1]);
-  const html = text == null ? '<p>This file no longer exists.</p>' : marked.parse(text);
+
+  const ticket = refs[0].kind === 'ticket';
+  $('docNav').classList.toggle('hidden', !ticket);
+  $('docNav').classList.toggle('flex', ticket);
+  if (ticket) {
+    const ts = state.specs.find((s) => s.id === refs[0].spec)?.tickets || [];
+    const i = ts.findIndex((t) => t.num === refs[0].id);
+    $('prev').disabled = i <= 0;
+    $('next').disabled = i < 0 || i >= ts.length - 1;
+  }
+
+  $('docAccent').className = 'h-1 shrink-0 ' + (cur?.accent || 'bg-zinc-300 dark:bg-zinc-700');
+  $('docHead').innerHTML = cur ? `
+    <div class="flex min-w-0 items-center gap-2 text-xs text-zinc-500">${cur.kicker}</div>
+    <h2 class="mt-1.5 text-xl font-semibold leading-snug tracking-tight">${esc(cur.title)}</h2>
+    <div class="mt-3 flex flex-wrap items-center gap-2">${cur.badges}</div>`
+    : '<h2 class="text-xl font-semibold tracking-tight">Not found</h2>';
+  $('docPath').textContent = cur ? '.sdd/specs/' + cur.path : '';
+
+  const text = cur && state.files.get(cur.path);
+  let html = '<p>This file no longer exists.</p>';
+  if (text != null) {
+    const { meta, body } = splitDoc(text);
+    html = (meta.length ? `
+      <dl class="not-prose mb-7 grid grid-cols-[max-content,1fr] gap-x-6 gap-y-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/50 px-4 py-3 text-sm">
+        ${meta.map(([k, v]) => `<dt class="text-zinc-500">${esc(k)}</dt><dd class="min-w-0 break-words text-zinc-800 dark:text-zinc-200 [&_code]:rounded [&_code]:bg-zinc-200/60 [&_code]:px-1 [&_code]:text-xs dark:[&_code]:bg-zinc-800">${marked.parseInline(v)}</dd>`).join('')}
+      </dl>` : '') + tasks(marked.parse(body));
+  }
   if (keepScroll && $('doc').dataset.html === html) return;
-  const top = $('doc').scrollTop;
+  const top = $('docScroll').scrollTop;
   $('doc').innerHTML = html;
   $('doc').dataset.html = html;
-  $('doc').scrollTop = keepScroll ? top : 0;
+  $('docScroll').scrollTop = keepScroll ? top : 0;
 }
 
 function closeDoc() {
+  if (!state.doc) return;
   state.doc = null;
-  $('drawer').classList.add('hidden');
+  const d = $('drawer');
+  d.classList.remove('open');
+  d.closing = setTimeout(() => d.classList.add('hidden'), 280);
 }
 
 // ---------- wiring ----------
@@ -516,11 +972,33 @@ function closeDoc() {
 $('open').onclick = openFolder;
 $('reload').onclick = reload;
 $('picker').onchange = (e) => e.target.files.length && loadFileList(e.target.files);
-$('spec').onchange = (e) => { state.specId = e.target.value; store.set('spec', state.specId); render(); };
+$('brand').onclick = () => go(null);
+window.addEventListener('hashchange', () => {
+  state.specId = routeId();
+  closeDoc();
+  if (state.files.size) render();
+  window.scrollTo(0, 0);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && $('search') && document.activeElement !== $('search') && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) {
+    e.preventDefault();
+    $('search').focus();
+  }
+});
 document.querySelectorAll('#views button').forEach((b) => (b.onclick = () => { state.view = b.dataset.view; store.set('view', state.view); render(); }));
 $('close').onclick = closeDoc;
 $('backdrop').onclick = closeDoc;
-document.addEventListener('keydown', (e) => e.key === 'Escape' && closeDoc());
+$('prev').onclick = () => stepTicket(-1);
+$('next').onclick = () => stepTicket(1);
+$('copyPath').onclick = async () => {
+  try { await navigator.clipboard.writeText($('docPath').textContent); } catch { return; }
+  $('copyPath').textContent = 'Copied';
+  setTimeout(() => ($('copyPath').textContent = 'Copy path'), 1200);
+};
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDoc();
+  if (state.doc && !e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) stepTicket(e.key === 'ArrowLeft' ? -1 : 1);
+});
 window.addEventListener('focus', () => state.handle && loadHandle(state.handle));
 
 restore();
