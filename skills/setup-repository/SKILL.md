@@ -15,7 +15,7 @@ Prepare the repository for `to-spec`, `to-tickets`, `build` and `commit`. Everyt
 └── specs/           ← to-spec and to-tickets write here
 ```
 
-It also settles the repo's layout in `docs/STRUCTURE.md`, which is committed: the layout is a team standard, not pipeline state.
+It also settles the repo's layout in `docs/STRUCTURE.md`, and points the repo's `AGENTS.md` or `CLAUDE.md` at the framework's files. Both are committed: they are team standards, not pipeline state.
 
 Running it again is safe: it refreshes the dashboard and keeps everything else.
 
@@ -29,6 +29,18 @@ Running it again is safe: it refreshes the dashboard and keeps everything else.
 
 4. **Ignore it.** When `git check-ignore -q .sdd/settings.json` fails, append `.sdd/` to the root `.gitignore`, creating the file when needed. Done when that check passes.
 
-5. **Settle the layout.** Invoke the `project-structure` skill. When `docs/STRUCTURE.md` exists, show its archetype and ask whether to keep it. Otherwise detect the archetype of each app, then propose `docs/STRUCTURE.md`: the layout the code already uses, or, in a repo without code, the archetype's layout; iterate until the user confirms it. Write it, and add one line to `AGENTS.md` (or `CLAUDE.md` when only that exists, creating `AGENTS.md` when neither does): "Place and name files by `docs/STRUCTURE.md`." Done when the user confirms `docs/STRUCTURE.md` and the pointer line exists.
+5. **Settle the layout.** Invoke the `project-structure` skill. When `docs/STRUCTURE.md` exists, show its archetype and ask whether to keep it. Otherwise detect the archetype of each app, then propose `docs/STRUCTURE.md`: the layout the code already uses, or, in a repo without code, the archetype's layout; iterate until the user confirms it, then write it. Done when the user confirms `docs/STRUCTURE.md`.
 
-6. **Hand over.** Report what you created or changed, including the files to commit (`docs/STRUCTURE.md` and the pointer line), how to open the dashboard (open `.sdd/dashboard.html` in a browser, then pick the `.sdd` folder), and the next step: brainstorm a feature, then `/to-spec`. Done when the user has the report.
+6. **Point the agent file.** Ask whether the repo's agent instructions live in `AGENTS.md` or `CLAUDE.md`, recommending the one that already exists. When the user picks `AGENTS.md` and no `CLAUDE.md` exists, offer a `CLAUDE.md` holding only `@AGENTS.md`: Claude Code reads `CLAUDE.md`, never `AGENTS.md`. In the chosen file, write this section, replacing it when it already exists and creating the file when needed:
+
+   ```markdown
+   ## Spec workflow
+
+   - `docs/STRUCTURE.md`: the folder layout and file names. Read it before creating, moving or naming a file.
+   - `GLOSSARY.md` and `docs/adr/` (or `GLOSSARY-MAP.md`), when present: the domain's terms and the decisions already made. Name code in the glossary's terms, and work within the ADRs.
+   - `.sdd/specs/`: specs, milestones and tickets, kept out of git. On an `sdd/<spec>/<milestone>` branch, the folders it names hold the work's requirements.
+   ```
+
+   Done when the chosen file holds the section once.
+
+7. **Hand over.** Report what you created or changed, including the files to commit (`docs/STRUCTURE.md` and the agent file), how to open the dashboard (open `.sdd/dashboard.html` in a browser, then pick the `.sdd` folder), and the next step: brainstorm a feature, then `/to-spec`. Done when the user has the report.

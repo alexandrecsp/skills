@@ -45,7 +45,7 @@ Prepares the repo. It creates `.sdd/`, which holds everything the pipeline share
 
 `commitKeyPattern` is the regex for an optional key at the start of every commit message, such as a ticket ID.
 
-It also settles the repo's **layout** with `project-structure`. It detects each app's archetype (frontend, backend or full-stack) and writes `docs/STRUCTURE.md`, which is committed. In a repo that already has code, it records the layout the code uses; in an empty repo, it proposes the archetype's hexagonal layout. It also adds a pointer line to `AGENTS.md`. `build`'s implementers place and name files by `docs/STRUCTURE.md`, and `review-changes` reviews against it.
+It also settles the repo's **layout** with `project-structure`. It detects each app's archetype (frontend, backend or full-stack) and writes `docs/STRUCTURE.md`, which is committed. In a repo that already has code, it records the layout the code uses; in an empty repo, it proposes the archetype's hexagonal layout. It then asks whether the repo uses `AGENTS.md` or `CLAUDE.md`, and writes a short **Spec workflow** section there pointing at `docs/STRUCTURE.md`, the glossary and ADRs, and `.sdd/specs/`. `build`'s implementers place and name files by `docs/STRUCTURE.md`, and `review-changes` reviews against it.
 
 It is safe to run again: a rerun refreshes the dashboard and keeps everything else.
 
