@@ -14,6 +14,8 @@ Find where the codebase's shape causes **friction**, and propose refactors that 
 
 Every candidate preserves behaviour: a refactor changes the shape, never what the code does. The aim is testability and code an agent can navigate.
 
+This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setup-repository` and stop.
+
 ## Process
 
 1. **Scope.** Deepening pays back through future changes, so look where change happens (YAGNI). When the user named a module, area or pain point, take it. Otherwise read a long stretch of `git log --stat` and rank the **hot spots**: the files and areas that keep changing. When changes are scattered with no hot spot, widen to the whole codebase. Done when you can name the areas to scan, each with why.
@@ -26,7 +28,7 @@ Every candidate preserves behaviour: a refactor changes the shape, never what th
 
    Drop a candidate an ADR forbids, unless its friction is real enough to reopen that ADR; keep that one, flagged with the ADR and why. Done when every candidate has every field.
 
-4. **Report.** Write the candidates as one self-contained HTML file in the OS temp directory (`$TMPDIR`, else `/tmp`, or `%TEMP%` on Windows) named `refactor-review-<timestamp>.html`, so nothing lands in the repo. Build it by [HTML-REPORT.md](HTML-REPORT.md). Open it (`start`, `open` or `xdg-open`) and give the user its absolute path. Interfaces wait for step 5: the report names problems and refactors only. Ask: "Which of these would you like to explore?" Done when the user has picked a candidate, or declined them all.
+4. **Report.** Write the candidates as one self-contained HTML file, `.sdd/refactors/<YYYY-MM-DD-HHmm>.html`, kept with the repo's other pipeline state and out of git. Build it by [HTML-REPORT.md](HTML-REPORT.md). Open it (`start`, `open` or `xdg-open`) and give the user its absolute path. Interfaces wait for step 5: the report names problems and refactors only. Ask: "Which of these would you like to explore?" Done when the user has picked a candidate, or declined them all.
 
 5. **Brainstorm the pick.** Invoke the `brainstorm` and `domain-modeling` skills, and run the rounds on the candidate, with each domain-modeling challenge entering the current round as a frontier question.
 

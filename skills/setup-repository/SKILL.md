@@ -27,7 +27,7 @@ Running it again is safe: it refreshes the dashboard and keeps everything else.
 
 3. **Write `.sdd/`.** Create `.sdd/specs/`. When an old `.scratch/specs/` exists, ask the user whether to move its spec folders into `.sdd/specs/`, and move them when they agree. Write `.sdd/settings.json` as `{ "commitKeyPattern": "<regex>" }` (or `null`), keeping any other fields already there. Copy [dashboard.html](dashboard.html) to `.sdd/dashboard.html`, replacing any older copy. Done when all three exist.
 
-4. **Ignore it.** When `git check-ignore -q .sdd/settings.json` fails, append `.sdd/` to the root `.gitignore`, creating the file when needed. Done when that check passes.
+4. **Ignore it.** When `git check-ignore -q .sdd/settings.json` fails, ask the user whether to append `.sdd/` to the root `.gitignore` (creating the file when needed), recommending it. When the user declines, or the repo's `.gitignore` is off-limits, append `.sdd/` to `.git/info/exclude` instead: it ignores the folder locally, with nothing to commit. When `git ls-files .sdd` lists files already committed, show them and, when the user agrees, untrack them with `git rm -r --cached .sdd`. Done when the check passes and `git ls-files .sdd` lists nothing.
 
 5. **Settle the layout.** Invoke the `project-structure` skill. When `docs/STRUCTURE.md` exists, show its archetype and ask whether to keep it. Otherwise detect the archetype of each app, then propose `docs/STRUCTURE.md`: the layout the code already uses, or, in a repo without code, the archetype's layout; iterate until the user confirms it, then write it. Done when the user confirms `docs/STRUCTURE.md`.
 

@@ -34,7 +34,7 @@ Each stage writes files the next one reads, and each ends by telling you the nex
 
 ### 0. `/setup-repository`
 
-Prepares the repo. It creates `.sdd/`, which holds everything the pipeline shares and is added to `.gitignore`:
+Prepares the repo. It creates `.sdd/`, which holds everything the pipeline shares and is kept out of git, through `.gitignore` or, when that file can't change, `.git/info/exclude`:
 
 ```
 .sdd/
@@ -136,7 +136,7 @@ Every pipeline branch starts with `sdd/`, so `git branch --list 'sdd/*'` finds t
 | `writing-for-agents` | How to write skills, `CLAUDE.md` and `AGENTS.md`. Used when editing this repo. |
 | `research` | Researches a question against primary sources in a background sub-agent. Saves the cited findings to `.sdd/research/<slug>.md`. |
 | `prototype` | Builds a throwaway prototype that answers one design question: a shareable HTML demo for logic, or switchable variants for UI. Keeps it on a `prototype/<slug>` branch and records the verdict. |
-| `improve-and-refactor` | Scans hot spots for deepening and smell refactors, shows them as an HTML report, and brainstorms the one you pick. A contained refactor goes straight to `/to-tickets` and `/build`; a larger one starts at `/to-spec`. |
+| `improve-and-refactor` | Scans hot spots for deepening and smell refactors, shows them as an HTML report saved to `.sdd/refactors/`, and brainstorms the one you pick. A contained refactor goes straight to `/to-tickets` and `/build`; a larger one starts at `/to-spec`. |
 
 The pipeline skills (`setup-repository`, `brainstorm-with-docs`, `to-spec`, `to-tickets`, `build`) and `improve-and-refactor` only run when you type their command. The others can also be invoked by the agent when it needs them.
 
