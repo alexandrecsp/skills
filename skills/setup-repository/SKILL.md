@@ -15,6 +15,8 @@ Prepare the repository for `to-spec`, `to-tickets`, `build` and `commit`. Everyt
 └── specs/           ← to-spec and to-tickets write here
 ```
 
+It also settles the repo's layout in `docs/STRUCTURE.md`, which is committed: the layout is a team standard, not pipeline state.
+
 Running it again is safe: it refreshes the dashboard and keeps everything else.
 
 ## Process
@@ -27,4 +29,6 @@ Running it again is safe: it refreshes the dashboard and keeps everything else.
 
 4. **Ignore it.** When `git check-ignore -q .sdd/settings.json` fails, append `.sdd/` to the root `.gitignore`, creating the file when needed. Done when that check passes.
 
-5. **Hand over.** Report what you created or changed, how to open the dashboard (open `.sdd/dashboard.html` in a browser, then pick the `.sdd` folder), and the next step: brainstorm a feature, then `/to-spec`. Done when the user has the report.
+5. **Settle the layout.** Invoke the `project-structure` skill. When `docs/STRUCTURE.md` exists, show its archetype and ask whether to keep it. Otherwise detect the archetype of each app, then propose `docs/STRUCTURE.md`: the layout the code already uses, or, in a repo without code, the archetype's layout; iterate until the user confirms it. Write it, and add one line to `AGENTS.md` (or `CLAUDE.md` when only that exists, creating `AGENTS.md` when neither does): "Place and name files by `docs/STRUCTURE.md`." Then ask whether to enforce its dependency rules with the tool `project-structure` names, and add that tool's config and a script the test suite runs when the user agrees. Done when the user confirms `docs/STRUCTURE.md`, the pointer line exists, and the user has answered about enforcing.
+
+6. **Hand over.** Report what you created or changed, including the files to commit (`docs/STRUCTURE.md`, the pointer line, any enforcement config), how to open the dashboard (open `.sdd/dashboard.html` in a browser, then pick the `.sdd` folder), and the next step: brainstorm a feature, then `/to-spec`. Done when the user has the report.

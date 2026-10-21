@@ -43,7 +43,11 @@ Prepares the repo. It creates `.sdd/`, which holds everything the pipeline share
 └── specs/
 ```
 
-`commitKeyPattern` is the regex for an optional key at the start of every commit message, such as a ticket ID. It is safe to run again: a rerun refreshes the dashboard and keeps everything else.
+`commitKeyPattern` is the regex for an optional key at the start of every commit message, such as a ticket ID.
+
+It also settles the repo's **layout** with `project-structure`. It detects each app's archetype (frontend, backend or full-stack) and writes `docs/STRUCTURE.md`, which is committed. In a repo that already has code, it records the layout the code uses; in an empty repo, it proposes the archetype's hexagonal layout. It adds a pointer line to `AGENTS.md` and can add a dependency check that the test suite runs. `build`'s implementers place and name files by `docs/STRUCTURE.md`, and `review-changes` reviews against it.
+
+It is safe to run again: a rerun refreshes the dashboard and keeps everything else.
 
 ### 1. `/brainstorm [topic]`
 
@@ -127,6 +131,7 @@ Every pipeline branch starts with `sdd/`, so `git branch --list 'sdd/*'` finds t
 | `review-changes` | Reviews a diff in two separate sub-agents. **Standards** checks repo docs, glossary, ADRs and the smell baseline. **Spec** checks for missing requirements, scope creep and requirements built wrong. |
 | `domain-modeling` | Maintains `GLOSSARY.md` and ADRs, including multi-context repos with `GLOSSARY-MAP.md`. |
 | `design-patterns` | A catalogue of patterns and when to choose each one. Each choice is recorded as Pattern, Where and Why. |
+| `project-structure` | One hexagonal layout for every language: `domain/` (entities, value objects, ports), `application/` (use cases, services, DTOs), `infrastructure/` (driving, driven, config). Covers role-suffixed names for TypeScript, Python and Java, and frontend, backend and full-stack apps. The repo's `docs/STRUCTURE.md` overrides it. |
 | `codebase-design` | Vocabulary for deep modules: module, interface, seam, adapter, depth. |
 | `writing-for-agents` | How to write skills, `CLAUDE.md` and `AGENTS.md`. Used when editing this repo. |
 | `research` | Researches a question against primary sources in a background sub-agent. Saves the cited findings to `.sdd/research/<slug>.md`. |

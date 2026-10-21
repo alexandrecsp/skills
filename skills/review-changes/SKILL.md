@@ -22,7 +22,7 @@ Each axis runs in its own sub-agent, so neither pollutes the other's context, an
    - **Tickets**, when the diff builds one ticket or milestone: their acceptance criteria and Design patterns rows, with `spec.md` read for context only.
    - **The spec**, when the diff builds all of it: every user story, plus its Testing Decisions seams and Design Patterns rows.
 
-3. **Find the standards.** List every file in the repo that documents how code should be written; `CODING_STANDARDS.md`, `CONTRIBUTING.md`, `CLAUDE.md` and `AGENTS.md` are on it when they exist, and so are the **domain docs** when present (names in the diff use the glossary's terms): `GLOSSARY.md` and the ADRs in `docs/adr/`; when a `GLOSSARY-MAP.md` exists, the root ADRs plus the `GLOSSARY.md` and `docs/adr/` of each context the diff touches. Add the **smell baseline** in [SMELLS.md](SMELLS.md), which applies even when the repo documents nothing. Done when the list is complete.
+3. **Find the standards.** List every file in the repo that documents how code should be written; `CODING_STANDARDS.md`, `CONTRIBUTING.md`, `docs/STRUCTURE.md`, `CLAUDE.md` and `AGENTS.md` are on it when they exist, and so are the **domain docs** when present (names in the diff use the glossary's terms): `GLOSSARY.md` and the ADRs in `docs/adr/`; when a `GLOSSARY-MAP.md` exists, the root ADRs plus the `GLOSSARY.md` and `docs/adr/` of each context the diff touches. Add the **smell baseline** in [SMELLS.md](SMELLS.md), which applies even when the repo documents nothing. Done when the list is complete.
 
 4. **Run both sub-agents.** Issue both calls together, in the foreground.
 
