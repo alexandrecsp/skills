@@ -13,7 +13,8 @@ Use these terms exactly; `port` and `adapter` mean what they mean in `codebase-d
 
 - **Module**: a feature-sized slice named by a `GLOSSARY.md` term, holding its own hexagon. Code is grouped by module first, layer second.
 - **Domain**: the module's rules: entities, value objects, and the driven ports they need, plus domain events and errors. Pure: no framework, no I/O.
-- **Driven port**: an interface the module needs from the outside (a repository, a gateway, a clock). It lives in the domain, so every port has one home.
+- **Aggregate**: a root entity and the entities and value objects it guards, loaded and saved as one. Each root gets one repository port.
+- **Driven port**: an interface the module needs from the outside (a repository, a gateway, a clock, a unit of work). It lives in the domain, so every port has one home.
 - **Application**: the module's use cases, the services they share, and the DTOs they take and return.
 - **Use case**: the only entry point for one user intent, and the module's **driving port**: adapters call it directly, through no separate interface.
 - **Service**: application logic shared by two or more use cases, called only by use cases. A service with one caller folds back into it.
@@ -45,10 +46,10 @@ Use these terms exactly; `port` and `adapter` mean what they mean in `codebase-d
 ```
 
 - **Dependencies point inward**: infrastructure → application → domain. The domain imports only the domain and the shared kernel.
-- **Use cases take commands and return results.** Adapters map their own DTOs to and from these, so they never hold a domain entity.
+- **Use cases take commands and return results.** Driving adapters map their DTOs to and from these, so they never hold a domain entity. Driven adapters implement domain ports in entity terms and map each entity to and from their own model.
 - **The domain holds no DTOs**: entities and value objects carry behaviour, and DTOs live at the boundaries around them.
-- **A module's interface is its use cases and application DTOs.** Another module imports only those, through the module's public entry (`index.ts`, `__init__.py`, the `application` packages in Java).
-- **A driven port earns its file at a real seam**: two adapters, typically production and in-memory for tests (`codebase-design`'s "two adapters mean a real one"). With one adapter, the use case calls it directly.
+- **A module's interface is its use cases, application DTOs, and the domain events it publishes.** Another module imports only those, through the module's public entry (`index.ts`, `__init__.py`, the packages [JAVA.md](JAVA.md) names).
+- **Every driven port has two adapters**: production, and the in-memory one use-case tests run on (`codebase-design`'s "two adapters mean a real one").
 - **A folder exists once it holds a file.** A display-only frontend module can be just `infrastructure/driving/`.
 - **Tests sit beside the file they test**, where the language allows; use-case tests run at the application seam with in-memory driven adapters.
 
@@ -66,7 +67,7 @@ Entities and value objects take the plain glossary noun: they are the domain's l
 | `application/use-cases` | UseCase | PlaceOrder UseCase |
 | `application/services` | Service | Pricing Service |
 | `application/dtos` | Command, Query, Result | PlaceOrder Command, Order Result |
-| `infrastructure/driving` | the channel: Controller, Listener, Command (CLI), Actions | Order Controller |
+| `infrastructure/driving` | the channel: Controller, Listener, Cli, Actions | Order Controller |
 | `infrastructure/driving/dtos` | Request, Response | PlaceOrder Request |
 | `infrastructure/driven` | Adapter, prefixed by technology | Postgres OrderRepository Adapter |
 | `infrastructure/driven/dtos` | Model (persistence), Payload (external API), prefixed by technology | Postgres Order Model |

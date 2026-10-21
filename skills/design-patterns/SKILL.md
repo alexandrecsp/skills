@@ -40,7 +40,7 @@ Wherever a pattern choice is written down, record it as Pattern, Where and Why, 
 - **Strategy**: one step has interchangeable algorithms chosen per call or per configuration.
 - **State**: an object's behaviour changes with an explicit state, and the legal transitions matter.
 - **Observer**: several parts must react to a change without the source knowing them.
-- **Command**: actions must be queued, logged, undone or retried as values.
+- **Command**: actions must be queued, logged, undone or retried as values. Each carries its own execution, unlike a use case's input DTO.
 - **Template Method**: several variants share a fixed sequence and differ in a few steps. Prefer Strategy when the steps vary independently.
 - **Chain of Responsibility**: a request passes through handlers until one takes it (middleware, validation chains).
 

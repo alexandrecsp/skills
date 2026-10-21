@@ -30,6 +30,7 @@ src/
         │   └── dtos/place-order.form.ts
         ├── driven/
         │   ├── prisma-order-repository.adapter.ts
+        │   ├── in-memory-order-repository.adapter.ts
         │   └── dtos/prisma-order.model.ts
         └── config/ordering.config.ts
 ```

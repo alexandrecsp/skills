@@ -7,7 +7,7 @@ src/
 ├── main.ts                      ← composition root: wires modules, starts the transports
 ├── shared/
 └── modules/ordering/
-    ├── index.ts                 ← the module's interface: use cases and application DTOs
+    ├── index.ts                 ← the module's interface: use cases, application DTOs and published events
     ├── domain/
     │   ├── entities/order.ts
     │   ├── value-objects/money.ts

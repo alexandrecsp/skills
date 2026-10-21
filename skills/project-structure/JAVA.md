@@ -26,8 +26,8 @@ src/main/java/com/acme/shop/
 ```
 
 - **Packages are lowercase and singular, with no separators**: `value-objects/` becomes `valueobject`, `use-cases/` becomes `usecase`. The full name is `<base package>.<module>.<layer>.<folder>`, such as `com.acme.shop.ordering.application.usecase`.
-- **Errors extend `RuntimeException`** and keep the `Error` suffix, so the domain's name for the failure survives.
+- **Errors extend `RuntimeException` when thrown** and keep the `Error` suffix, so the domain's name for the failure survives.
 - **DTOs are `record`s.** The JPA `@Entity` is a driven DTO (`JpaOrderModel`), never the domain's `Order`: the domain imports no framework.
 - **Spring stereotypes are welcome outside the domain**: `@Service` on use cases and services, `@RestController` and `@Component` on adapters, `@Configuration` in `config/`.
-- **A module's interface** is its `application.usecase` and `application.dto` packages; another module imports nothing else from it.
+- **A module's interface** is its `application.usecase`, `application.dto` and `domain.event` packages; another module imports nothing else from it.
 - **Tests mirror the main tree** under `src/test/java`, named `<Class>Test`, since Maven and Gradle keep them apart.
