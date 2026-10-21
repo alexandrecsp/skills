@@ -31,7 +31,3 @@ src/main/java/com/acme/shop/
 - **Spring stereotypes are welcome outside the domain**: `@Service` on use cases and services, `@RestController` and `@Component` on adapters, `@Configuration` in `config/`.
 - **A module's interface** is its `application.usecase` and `application.dto` packages; another module imports nothing else from it.
 - **Tests mirror the main tree** under `src/test/java`, named `<Class>Test`, since Maven and Gradle keep them apart.
-
-## Enforcing
-
-ArchUnit, as a JUnit test the suite runs: a `layeredArchitecture()` per module (domain accessed by application and infrastructure, application by infrastructure only), plus a rule that `..domain..` classes depend on no `org.springframework..` or `jakarta.persistence..` class. Spring Modulith's `ApplicationModules.verify()` adds the cross-module rule when the app uses it.

@@ -93,11 +93,3 @@ A monorepo gets an archetype per app or package (`apps/web` frontend, `apps/api`
 ## Recording
 
 `docs/STRUCTURE.md` is the repo's source of truth for layout, committed with the code. Write it as: the archetype and language per app, the tree, the names table in that language's spelling, the dependency rules, and every departure from this skill with its reason. In a repo with code, record the layout it already uses, mapped onto this vocabulary where it fits; moving existing code is a refactor for `improve-and-refactor`, never part of recording.
-
-## Enforcing
-
-Turn the dependency rules into a check the test suite runs, so a misplaced import fails the build. Write one rule per arrow: domain → application or infrastructure, application → infrastructure, a module → another module's internals.
-
-- **TypeScript**: `dependency-cruiser`, one `forbidden` rule per arrow.
-- **Python**: `import-linter`, a `layers` contract per module plus an `independence` contract across modules.
-- **Java**: ArchUnit, per [JAVA.md](JAVA.md).
