@@ -237,14 +237,14 @@ function parse(files) {
       s.summary = excerpt(section(text, 'Problem Statement') || section(text, 'Solution'));
       s.stories = (section(text, 'User Stories').match(/^\s*\d+\.\s/gm) || []).length;
     } else if (p.length === 4 && p[1] === 'milestones' && numOf(p[2])) {
-      if (!s.milestones.has(p[2])) s.milestones.set(p[2], { id: p[2], num: numOf(p[2]), title: unslug(p[2]), path: null, delivers: '', pr: null, tickets: [] });
+      if (!s.milestones.has(p[2])) s.milestones.set(p[2], { id: p[2], num: numOf(p[2]), title: unslug(p[2]), path: null, delivers: '', squash: null, tickets: [] });
       const m = s.milestones.get(p[2]);
       if (p[3] === 'milestone.md') {
         m.path = path;
         m.title = (heading(text) || m.title).replace(/^Milestone\s+\d+:\s*/i, '');
         m.delivers = excerpt(field(text, 'Delivers') || '');
-        const pr = field(text, 'PR') || 'none';
-        m.pr = /^none/i.test(pr) ? null : '#' + ((/\/pull\/(\d+)/.exec(pr) || /#?(\d+)/.exec(pr) || [, pr])[1]);
+        const squash = field(text, 'Squash') || '';
+        m.squash = /^[0-9a-f]{7,40}/i.test(squash) ? squash.slice(0, 7) : null;
       } else if (numOf(p[3])) {
         const deps = field(text, 'Depends on') || '';
         const commit = field(text, 'Commit') || '';
@@ -601,7 +601,7 @@ function list(spec) {
           </div>
           ${m.delivers ? `<p class="mt-0.5 truncate text-sm text-zinc-500">${esc(m.delivers)}</p>` : ''}
         </div>
-        ${m.pr ? `<span class="hidden sm:inline rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 font-mono text-xs text-zinc-500">PR ${esc(m.pr)}</span>` : ''}
+        ${m.squash ? `<span class="hidden sm:inline rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 font-mono text-xs text-zinc-500">${esc(m.squash)}</span>` : ''}
         <span class="text-xs tabular-nums text-zinc-500">${doneOf(m.tickets)}/${m.tickets.length}</span>
       </button>
       <ul class="divide-y divide-zinc-100 dark:divide-zinc-800/70 border-t border-zinc-100 dark:border-zinc-800">
@@ -847,7 +847,7 @@ function resolve(ref) {
     return {
       label: 'Milestone', path: m.path, accent: 'bg-gradient-to-r ' + SPEC_STATUS[st].accent, title: m.title,
       kicker: `<span class="font-mono">Milestone M${esc(m.num)}</span>${sep}<span class="truncate">${esc(spec.title)}</span>`,
-      badges: badge(SPEC_STATUS[st].tone, MILESTONE_LABEL[st]) + count(m.tickets) + (m.pr ? `<span class="rounded-md border border-zinc-200 dark:border-zinc-700 px-1.5 font-mono text-xs text-zinc-500">PR ${esc(m.pr)}</span>` : ''),
+      badges: badge(SPEC_STATUS[st].tone, MILESTONE_LABEL[st]) + count(m.tickets) + (m.squash ? `<span class="rounded-md border border-zinc-200 dark:border-zinc-700 px-1.5 font-mono text-xs text-zinc-500">${esc(m.squash)}</span>` : ''),
     };
   }
   const t = spec.tickets.find((t) => t.num === ref.id);

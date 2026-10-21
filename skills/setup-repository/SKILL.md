@@ -38,7 +38,7 @@ Running it again is safe: it refreshes the dashboard and keeps everything else.
 
    - `docs/STRUCTURE.md`: the folder layout and file names. Read it before creating, moving or naming a file.
    - `GLOSSARY.md` and `docs/adr/` (or `GLOSSARY-MAP.md`), when present: the domain's terms and the decisions already made. Name code in the glossary's terms, and work within the ADRs.
-   - `.sdd/specs/`: specs, milestones and tickets, kept out of git. On an `sdd/<spec>/<milestone>` branch, the folders it names hold the work's requirements.
+   - `.sdd/specs/`: specs, milestones and tickets, kept out of git. On an `sdd/<spec-folder>/spec` or `sdd/<spec-folder>/M<NNN>` branch, that spec folder, and its milestone numbered `NNN`, hold the work's requirements.
    ```
 
    Done when the chosen file holds the section once.
