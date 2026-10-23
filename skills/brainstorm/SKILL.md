@@ -66,6 +66,10 @@ Reply with letters (`1B 2A`), `ok` to take every recommendation, or your own ans
 
 Finding _facts_ is your job; the user only ever answers _decisions_. When a frontier question needs a fact from the environment (codebase, docs, tools), dispatch a sub-agent to find it. Keep the round moving: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now.
 
+### In-flight specs
+
+When the repo has `.sdd/specs/`, other specs may be planned or mid-build in the modules this design touches. Follow [IN-FLIGHT.md](../to-spec/IN-FLIGHT.md) alongside `What · Round 1`, and again when the `How` opens, since the `How` names new modules. Each conflict with an in-flight spec enters the next round as a frontier question.
+
 ## Done
 
 The session is done when the user confirms the `How` summary: every branch of the `What` and the `How` visited, nothing left silently assumed. That confirmation is the shared understanding; act on the plan only after it. `/to-spec` turns it into a spec.

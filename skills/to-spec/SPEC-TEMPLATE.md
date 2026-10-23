@@ -1,9 +1,11 @@
-Replace each section's guidance with its content. The first four sections are the `What` (the outcome, from the user's perspective); the next three are the `How` (the mechanism).
+Replace each section's guidance with its content. The first four sections are the `What` (the outcome, from the user's perspective); the next four are the `How` (the mechanism).
 
 ```markdown
 # <Spec title>
 
 **Key:** <the key the user gave, or "None">
+
+**Depends on:** <the folder names of the specs this one is built after, such as `003-invoice-export, 005-tax-rules`, or "None">
 
 ## Problem Statement
 
@@ -39,6 +41,12 @@ The implementation decisions that were made, such as:
 - Specific interactions
 
 Describe modules and interfaces by name and behaviour; file paths and code snippets go stale.
+
+## Relies On
+
+For each dependency, the assumptions this spec makes about its planned state, one bullet each: an interface, a seam, a behaviour, a term. `/build` checks each one against the landed code before it builds. Without dependencies, write "None".
+
+- `<dependency folder>`: <assumption>
 
 ## Testing Decisions
 
