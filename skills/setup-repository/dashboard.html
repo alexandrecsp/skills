@@ -126,6 +126,9 @@ async function walk(dir, prefix, out) {
   }
 }
 
+// Every file:// page shares one origin, so the saved folder is keyed by this copy's path: each repo's dashboard remembers its own.
+const handleKey = 'handle:' + location.pathname;
+
 const sameFiles = (a, b) => a.size === b.size && [...a].every(([k, v]) => b.get(k) === v);
 
 async function loadHandle(handle) {
@@ -169,7 +172,7 @@ async function openFolder() {
   if (!window.showDirectoryPicker) return $('picker').click();
   let handle;
   try { handle = await window.showDirectoryPicker({ id: 'sdd', mode: 'read' }); } catch { return; }
-  try { await idb('readwrite', (s) => s.put(handle, 'handle')); } catch {}
+  try { await idb('readwrite', (s) => s.put(handle, handleKey)); } catch {}
   await loadHandle(handle);
 }
 
@@ -180,7 +183,7 @@ async function reload() {
 
 async function restore() {
   let handle;
-  try { handle = await idb('readonly', (s) => s.get('handle')); } catch {}
+  try { handle = await idb('readonly', (s) => s.get(handleKey)); } catch {}
   if (!handle) return empty();
   if ((await handle.queryPermission({ mode: 'read' })) === 'granted') return loadHandle(handle);
   empty(`<button id="reconnect" class="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900">Reconnect to <b>${esc(handle.name)}</b></button>`);
