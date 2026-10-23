@@ -230,7 +230,7 @@ function specStatus(ts) {
 function parse(files) {
   const specs = new Map();
   const spec = (dir) => {
-    if (!specs.has(dir)) specs.set(dir, { id: dir, num: numOf(dir), title: unslug(dir), key: null, path: null, summary: '', stories: 0, milestones: new Map() });
+    if (!specs.has(dir)) specs.set(dir, { id: dir, num: numOf(dir), title: unslug(dir), key: null, path: null, summary: '', stories: 0, deps: [], landed: null, milestones: new Map() });
     return specs.get(dir);
   };
   for (const [path, text] of files) {
@@ -243,6 +243,9 @@ function parse(files) {
       s.key = /^none$/i.test(field(text, 'Key') || 'none') ? null : field(text, 'Key');
       s.summary = excerpt(section(text, 'Problem Statement') || section(text, 'Solution'));
       s.stories = (section(text, 'User Stories').match(/^\s*\d+\.\s/gm) || []).length;
+      s.deps = (field(text, 'Depends on') || '').split(',').map((d) => d.replace(/[`\s]/g, '')).filter(numOf);
+      const landed = field(text, 'Landed') || '';
+      s.landed = /^`?[0-9a-f]{7,40}/i.test(landed) ? landed.replace(/`/g, '').slice(0, 7) : null;
     } else if (p.length === 4 && p[1] === 'milestones' && numOf(p[2])) {
       if (!s.milestones.has(p[2])) s.milestones.set(p[2], { id: p[2], num: numOf(p[2]), title: unslug(p[2]), path: null, delivers: '', squash: null, tickets: [] });
       const m = s.milestones.get(p[2]);
@@ -276,7 +279,14 @@ function parse(files) {
       s.status = specStatus(s.tickets);
       return s;
     })
-    .sort((a, b) => a.num.localeCompare(b.num));
+    .sort((a, b) => a.num.localeCompare(b.num))
+    .map((s, _, all) => {
+      // A dependency is a spec folder name; one that is missing or has no Landed line holds this spec's build back.
+      s.deps = s.deps.map((id) => ({ id, spec: all.find((x) => x.id === id) }));
+      s.waiting = s.deps.filter((d) => !d.spec?.landed);
+      if (s.waiting.length && (s.status === 'draft' || s.status === 'ready')) s.status = 'waiting';
+      return s;
+    });
 }
 
 function setFiles(files) {
@@ -355,6 +365,7 @@ function render() {
 const SPEC_STATUS = {
   active: { label: 'In progress', tone: statusTone('doing'), accent: 'from-amber-400 to-orange-500' },
   blocked: { label: 'Blocked', tone: statusTone('blocked'), accent: 'from-red-400 to-rose-500' },
+  waiting: { label: 'Waiting', tone: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300', accent: 'from-violet-400 to-purple-500' },
   ready: { label: 'Ready to build', tone: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300', accent: 'from-sky-400 to-indigo-500' },
   draft: { label: 'Needs tickets', tone: statusTone('todo'), accent: 'from-zinc-300 to-zinc-400 dark:from-zinc-700 dark:to-zinc-600' },
   done: { label: 'Done', tone: statusTone('done'), accent: 'from-emerald-400 to-teal-500' },
@@ -499,6 +510,7 @@ function card(s) {
   const live = s.tickets.filter((t) => isDoing(t.status) || t.status === 'blocked');
   const next = s.milestones.find((m) => m.tickets.some((t) => t.status !== 'done'));
   const foot = live.length ? `<div class="space-y-0.5">${live.slice(0, 3).map((t) => ticketChip(t)).join('')}${live.length > 3 ? `<p class="px-2 text-xs text-zinc-400">+${live.length - 3} more</p>` : ''}</div>`
+    : s.status === 'waiting' ? `<p class="truncate text-xs text-violet-600 dark:text-violet-400">Waiting on ${s.waiting.map((d) => `<span class="font-mono">${esc(numOf(d.id))}</span>`).join(', ')}</p>`
     : s.status === 'draft' ? `<p class="text-xs text-zinc-500">Run <code class="font-mono">/to-tickets</code> to plan the build.</p>`
     : s.status === 'done' ? `<p class="text-xs text-emerald-600 dark:text-emerald-400">✓ All ${plural(s.milestones.length, 'milestone')} complete</p>`
     : next ? `<p class="truncate text-xs text-zinc-500">Next up · <span class="font-mono text-zinc-400">M${esc(next.num)}</span> ${esc(next.title)}</p>` : '';
@@ -864,6 +876,13 @@ function specPanel(spec) {
         ${stat('Blocked', blocked.length, blocked.length ? 'text-red-600 dark:text-red-400' : '')}
       </dl>
     </div>
+    ${spec.deps.length ? `<div>${caps('Depends on')}<div class="-mx-2 space-y-0.5">${spec.deps.map((d) => `
+      <button ${d.spec ? `data-go="${esc(d.id)}"` : 'disabled'} class="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm enabled:hover:bg-zinc-100 dark:enabled:hover:bg-zinc-900">
+        <span class="font-mono text-xs text-zinc-400">${esc(numOf(d.id))}</span>
+        <span class="min-w-0 flex-1 truncate">${esc(d.spec ? d.spec.title : unslug(d.id))}</span>
+        ${d.spec?.landed ? `<span class="text-xs text-emerald-600 dark:text-emerald-400" title="Landed as ${esc(d.spec.landed)}">Landed</span>`
+          : `<span class="text-xs text-violet-600 dark:text-violet-400">${d.spec ? 'Not landed' : 'Missing'}</span>`}
+      </button>`).join('')}</div></div>` : ''}
     ${live.length ? `<div>${caps('Now building')}<div class="-mx-2 space-y-0.5">${live.map((t) => ticketChip(t)).join('')}</div></div>` : ''}
     ${next && !live.length ? `<div>${caps('Up next')}
       <button data-ticket-ref="${esc(spec.id)}|${esc(next.num)}" class="flex w-full items-start gap-2.5 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 px-3 py-2.5 text-left hover:border-zinc-400 dark:hover:border-zinc-500">
