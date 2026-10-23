@@ -33,7 +33,7 @@
 <body class="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased">
 
 <header class="sticky top-0 z-20 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur">
-  <div class="mx-auto max-w-7xl px-4 h-14 flex items-center gap-3">
+  <div class="px-4 h-14 flex items-center gap-3">
     <button id="brand" class="flex shrink-0 items-center gap-2 font-semibold tracking-tight" title="All specs">
       <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-emerald-400 to-sky-500 text-xs font-bold text-white shadow-sm">S</span>SDD
     </button>
@@ -52,7 +52,11 @@
   </div>
 </header>
 
-<main id="main" class="mx-auto max-w-7xl px-4 py-6"></main>
+<div class="flex min-h-[calc(100vh-3.5rem)]">
+  <nav id="side" class="hidden"></nav>
+  <main id="main" class="min-w-0 flex-1 px-6 py-6"></main>
+  <aside id="inspect" class="hidden"></aside>
+</div>
 
 <div id="drawer" class="hidden fixed inset-0 z-30">
   <div id="backdrop" class="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px]"></div>
@@ -303,6 +307,8 @@ const cardTone = (s) =>
 const num = (n) => `<span class="font-mono text-xs text-zinc-400">#${esc(n)}</span>`;
 
 function empty(msg) {
+  $('side').className = 'hidden';
+  $('inspect').className = 'hidden';
   $('crumbs').innerHTML = '';
   $('views').classList.add('hidden');
   $('main').innerHTML = `
@@ -320,24 +326,21 @@ function render() {
     ? `<span class="text-zinc-300 dark:text-zinc-700">/</span><span class="font-mono text-xs text-zinc-400">${esc(spec.num)}</span><span class="hidden sm:inline truncate max-w-xs text-zinc-600 dark:text-zinc-300">${esc(spec.title)}</span>`
     : '';
   $('views').classList.toggle('hidden', !spec);
+  panels(spec);
   if (!spec) return home();
 
   document.querySelectorAll('#views button').forEach((b) => {
     b.className = 'px-3 py-1 rounded ' + (b.dataset.view === state.view ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'hover:bg-zinc-100 dark:hover:bg-zinc-900');
   });
 
-  const head = specHero(spec);
-
   const body = !spec.tickets.length
     ? `<div class="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 py-16 text-center text-sm text-zinc-500">No tickets yet. Run <code class="font-mono">/to-tickets</code> on this spec.</div>`
     : state.view === 'kanban' ? kanban(spec) : state.view === 'graph' ? graph(spec) : list(spec);
 
   const scroll = $('main').querySelector('[data-scroll]')?.scrollLeft;
-  $('main').innerHTML = head + body;
+  $('main').innerHTML = body;
   const scroller = $('main').querySelector('[data-scroll]');
   if (scroller && scroll) scroller.scrollLeft = scroll;
-  $('main').querySelector('[data-open-spec]').onclick = () => openDoc([specRef(spec)]);
-  $('main').querySelector('[data-home]').onclick = () => go(null);
   wireTicketRefs($('main'));
   $('main').querySelectorAll('[data-ticket]').forEach((el) => (el.onclick = () => openTicket(spec, el.dataset.ticket)));
   $('main').querySelectorAll('[data-milestone]').forEach((el) => {
@@ -391,55 +394,6 @@ const statusIcon = (s, size = 'h-5 w-5') =>
 const MILESTONE_LABEL = { active: 'In progress', blocked: 'Blocked', ready: 'Not started', draft: 'No tickets', done: 'Complete' };
 const plural = (n, w, ws = w + 's') => `${n} ${n === 1 ? w : ws}`;
 
-function specHero(spec) {
-  const st = SPEC_STATUS[spec.status];
-  const ts = spec.tickets;
-  const doing = ts.filter((t) => isDoing(t.status));
-  const blocked = ts.filter((t) => t.status === 'blocked');
-  const msDone = spec.milestones.filter((m) => m.tickets.length && m.tickets.every((t) => t.status === 'done')).length;
-  const of = (n, total) => `${n}<span class="text-sm font-normal text-zinc-400">/${total}</span>`;
-  const stat = (label, value, tone = '') => `<div><dt class="text-xs text-zinc-500">${label}</dt><dd class="mt-0.5 text-xl font-semibold tabular-nums tracking-tight ${tone}">${value}</dd></div>`;
-  const live = [...doing, ...blocked];
-  return `
-    <button data-home class="mb-3 inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">← All specs</button>
-    <section class="relative mb-8 overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 p-6 sm:p-8">
-      <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${st.accent}"></div>
-      <div class="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl"></div>
-      <div class="pointer-events-none absolute -bottom-32 left-1/4 h-72 w-72 rounded-full bg-sky-400/15 blur-3xl"></div>
-      <div class="relative flex flex-wrap items-center gap-6">
-        ${ring(pctOf(ts), 88, 8, `<span class="text-center leading-tight"><span class="block text-xl font-semibold tabular-nums">${pctOf(ts)}%</span><span class="text-[9px] uppercase tracking-widest text-zinc-500">done</span></span>`)}
-        <div class="min-w-0 flex-1 basis-72">
-          <div class="flex flex-wrap items-center gap-2 text-xs">
-            <span class="font-mono uppercase tracking-widest text-zinc-500">Spec ${esc(spec.num)}</span>
-            ${spec.key ? `<span class="rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 font-mono text-zinc-600 dark:text-zinc-300">${esc(spec.key)}</span>` : ''}
-            <span class="rounded-full px-2 py-0.5 font-medium ${st.tone}">${st.label}</span>
-          </div>
-          <button data-open-spec class="mt-2 text-left text-3xl font-semibold tracking-tight decoration-zinc-300 underline-offset-4 hover:underline dark:decoration-zinc-600" title="Read the spec">${esc(spec.title)}</button>
-          ${spec.summary ? `<p class="mt-2 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2">${esc(spec.summary)}</p>` : ''}
-        </div>
-        <dl class="flex flex-wrap gap-x-8 gap-y-3 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 px-5 py-3 backdrop-blur">
-          ${stat('Tickets', of(doneOf(ts), ts.length))}
-          ${stat('Milestones', of(msDone, spec.milestones.length))}
-          ${stat('Doing', doing.length, doing.length ? 'text-amber-600 dark:text-amber-400' : '')}
-          ${stat('Blocked', blocked.length, blocked.length ? 'text-red-600 dark:text-red-400' : '')}
-          ${spec.stories ? stat('Stories', spec.stories) : ''}
-        </dl>
-      </div>
-      ${spec.milestones.length ? `
-        <div class="relative mt-7 flex gap-2">${spec.milestones.map((m) => `
-          <button data-milestone="${esc(m.id)}" class="group min-w-0 text-left" style="flex:${Math.max(1, m.tickets.length)} 1 0" title="M${esc(m.num)} · ${esc(m.title)} — ${doneOf(m.tickets)}/${m.tickets.length}">
-            ${fill(m, 'h-2')}
-            <div class="mt-2 flex items-center gap-1.5 text-xs"><span class="font-mono text-zinc-400">M${esc(m.num)}</span><span class="truncate text-zinc-600 dark:text-zinc-300 group-hover:underline">${esc(m.title)}</span></div>
-          </button>`).join('')}
-        </div>` : ''}
-      ${live.length ? `
-        <div class="relative mt-6 border-t border-zinc-200 dark:border-zinc-800 pt-4">
-          <p class="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-500">Now building</p>
-          <div class="grid gap-1 sm:grid-cols-2">${live.map((t) => ticketChip(t, `<span class="hidden md:inline truncate max-w-[40%] text-xs text-zinc-400">M${esc(t.milestone.num)} · ${esc(t.milestone.title)}</span>`)).join('')}</div>
-        </div>` : ''}
-    </section>`;
-}
-
 const ticketChip = (t, extra = '') => `
   <button data-ticket-ref="${esc(t.spec.id)}|${esc(t.num)}" class="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800/70">
     <span class="h-1.5 w-1.5 shrink-0 rounded-full ${t.status === 'blocked' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'}"></span>
@@ -459,7 +413,7 @@ function home() {
           <kbd class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-zinc-200 dark:border-zinc-700 px-1 font-mono text-[10px] text-zinc-400">/</kbd>
         </label>
       </div>
-      <div id="grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+      <div id="grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"></div>
     </div>`;
     $('search').value = state.query;
     $('search').oninput = (e) => { state.query = e.target.value; homeGrid(); };
@@ -822,6 +776,111 @@ function wireGraph() {
       g.querySelectorAll('.edge.hot').forEach((e) => e.classList.remove('hot'));
     };
   });
+}
+
+// ---------- side panels ----------
+
+// The spec list on the left and, with a spec open, its details on the right; both stay put while the centre scrolls.
+const PANEL = 'sticky top-14 h-[calc(100vh-3.5rem)] shrink-0 overflow-y-auto border-zinc-200 dark:border-zinc-800';
+
+function panels(spec) {
+  $('side').className = `${PANEL} w-[272px] border-r bg-zinc-50/70 dark:bg-zinc-900/30`;
+  $('side').innerHTML = specList(spec);
+  wirePanel($('side'), spec);
+  if (!spec) {
+    $('inspect').className = 'hidden';
+    $('inspect').innerHTML = '';
+    return;
+  }
+  $('inspect').className = `${PANEL} w-[340px] border-l bg-white dark:bg-zinc-950`;
+  $('inspect').innerHTML = specPanel(spec);
+  wirePanel($('inspect'), spec);
+}
+
+function wirePanel(root, spec) {
+  root.querySelectorAll('[data-home]').forEach((el) => (el.onclick = () => go(null)));
+  root.querySelectorAll('[data-go]').forEach((el) => (el.onclick = () => go(el.dataset.go)));
+  wireTicketRefs(root);
+  if (!spec) return;
+  root.querySelectorAll('[data-open-spec]').forEach((el) => (el.onclick = () => openDoc([specRef(spec)])));
+  root.querySelectorAll('[data-milestone]').forEach((el) => {
+    const m = spec.milestones.find((m) => m.id === el.dataset.milestone);
+    el.onclick = () => openDoc([milestoneRef(spec, m), specRef(spec)]);
+  });
+}
+
+function specList(spec) {
+  return `<div class="p-3">
+    <button data-home class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-sm ${!spec ? 'bg-white font-medium shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100'}">
+      <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>Overview
+    </button>
+    <p class="px-2.5 pb-1.5 pt-5 text-[11px] font-medium uppercase tracking-widest text-zinc-400">Specs · ${state.specs.length}</p>
+    ${[...state.specs].reverse().map((s) => {
+      const sel = s === spec, st = SPEC_STATUS[s.status];
+      return `<button data-go="${esc(s.id)}" class="mb-1 block w-full rounded-lg px-2.5 py-2 text-left ${sel ? 'bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800' : 'hover:bg-zinc-100 dark:hover:bg-zinc-900/70'}">
+        <div class="flex items-center gap-2 text-sm">
+          <span class="h-2 w-2 shrink-0 rounded-full bg-gradient-to-r ${st.accent}" title="${st.label}"></span>
+          <span class="font-mono text-xs text-zinc-400">${esc(s.num)}</span>
+          <span class="min-w-0 flex-1 truncate ${sel ? 'font-semibold' : 'font-medium text-zinc-700 dark:text-zinc-300'}">${esc(s.title)}</span>
+          <span class="text-xs tabular-nums text-zinc-500">${pctOf(s.tickets)}%</span>
+        </div>
+        ${s.milestones.length ? `<div class="mt-2 pl-4">${segments(s)}</div>` : ''}
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
+// The first todo ticket whose dependencies are all done: what /build picks up next.
+const nextTicket = (spec) => spec.tickets.find((t) => t.status === 'todo'
+  && t.deps.every((d) => (spec.tickets.find((x) => x.num === d)?.status ?? 'done') === 'done'));
+
+function specPanel(spec) {
+  const st = SPEC_STATUS[spec.status], ts = spec.tickets, pct = pctOf(ts);
+  const doing = ts.filter((t) => isDoing(t.status));
+  const blocked = ts.filter((t) => t.status === 'blocked');
+  const msDone = spec.milestones.filter((m) => m.tickets.length && m.tickets.every((t) => t.status === 'done')).length;
+  const live = [...doing, ...blocked];
+  const next = nextTicket(spec);
+  const caps = (t) => `<p class="mb-2 text-[11px] font-medium uppercase tracking-widest text-zinc-400">${t}</p>`;
+  const of = (n, total) => `${n}<span class="text-xs font-normal text-zinc-400">/${total}</span>`;
+  const stat = (label, value, tone = '') => `<div class="rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 py-2"><dt class="text-[11px] text-zinc-500">${label}</dt><dd class="text-lg font-semibold tabular-nums tracking-tight ${tone}">${value}</dd></div>`;
+  return `<div class="h-1 bg-gradient-to-r ${st.accent}"></div>
+  <div class="space-y-7 p-5">
+    <div>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span class="font-mono uppercase tracking-widest text-zinc-500">Spec ${esc(spec.num)}</span>
+        ${spec.key ? `<span class="rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 font-mono text-zinc-600 dark:text-zinc-300">${esc(spec.key)}</span>` : ''}
+        <span class="rounded-full px-2 py-0.5 font-medium ${st.tone}">${st.label}</span>
+      </div>
+      <button data-open-spec class="mt-2 text-left text-xl font-semibold leading-snug tracking-tight decoration-zinc-300 underline-offset-4 hover:underline dark:decoration-zinc-600" title="Read the spec">${esc(spec.title)}</button>
+      ${spec.summary ? `<p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-4">${esc(spec.summary)}</p>` : ''}
+    </div>
+    <div class="flex items-center gap-4">
+      ${ring(pct, 76, 7, `<span class="text-center leading-tight"><span class="block text-base font-semibold tabular-nums">${pct}%</span><span class="text-[8px] uppercase tracking-widest text-zinc-500">done</span></span>`)}
+      <dl class="grid flex-1 grid-cols-2 gap-2">
+        ${stat('Tickets', of(doneOf(ts), ts.length))}
+        ${stat('Milestones', of(msDone, spec.milestones.length))}
+        ${stat('Doing', doing.length, doing.length ? 'text-amber-600 dark:text-amber-400' : '')}
+        ${stat('Blocked', blocked.length, blocked.length ? 'text-red-600 dark:text-red-400' : '')}
+      </dl>
+    </div>
+    ${live.length ? `<div>${caps('Now building')}<div class="-mx-2 space-y-0.5">${live.map((t) => ticketChip(t)).join('')}</div></div>` : ''}
+    ${next && !live.length ? `<div>${caps('Up next')}
+      <button data-ticket-ref="${esc(spec.id)}|${esc(next.num)}" class="flex w-full items-start gap-2.5 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 px-3 py-2.5 text-left hover:border-zinc-400 dark:hover:border-zinc-500">
+        ${statusIcon(next.status, 'h-4 w-4 mt-0.5')}
+        <span class="min-w-0"><span class="block text-sm font-medium leading-snug">${esc(next.title)}</span><span class="text-xs text-zinc-500"><span class="font-mono">#${esc(next.num)}</span> · M${esc(next.milestone.num)} ${esc(next.milestone.title)}</span></span>
+      </button></div>` : ''}
+    ${spec.milestones.length ? `<div>${caps('Milestones')}<div class="-mx-2 space-y-0.5">${spec.milestones.map((m) => `
+      <button data-milestone="${esc(m.id)}" class="group block w-full rounded-md px-2 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-900">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="font-mono text-zinc-400">M${esc(m.num)}</span>
+          <span class="min-w-0 flex-1 truncate text-zinc-700 group-hover:underline dark:text-zinc-200">${esc(m.title)}</span>
+          <span class="tabular-nums text-zinc-500">${doneOf(m.tickets)}/${m.tickets.length}</span>
+        </div>
+        <div class="mt-1.5">${fill(m, 'h-1')}</div>
+      </button>`).join('')}</div></div>` : ''}
+    <button data-open-spec class="w-full rounded-md border border-zinc-200 dark:border-zinc-800 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900">Read the spec</button>
+  </div>`;
 }
 
 // ---------- drawer ----------
