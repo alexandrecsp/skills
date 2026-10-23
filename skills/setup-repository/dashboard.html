@@ -750,20 +750,29 @@ function graph(spec) {
       path += ` L${at[0]},${at[1]}`;
     }
     const [ex, ey] = enter(to);
-    path += curve(at, v ? [ex, ey - 4] : [ex - 4, ey]);
+    path += curve(at, [ex, ey]);
     const tone = from.t.status === 'done' ? 'stroke-zinc-300 dark:stroke-zinc-700' : 'stroke-zinc-500 dark:stroke-zinc-400';
-    edges.push(`<path class="edge ${tone}" data-from="${esc(d)}" data-to="${esc(n)}" d="${path}" fill="none" stroke-width="1.5" marker-end="url(#arrow)"/>`);
+    edges.push(`<path class="edge ${tone}" data-from="${esc(d)}" data-to="${esc(n)}" d="${path}" fill="none" stroke-width="1.5"/>`);
   }
 
   const dirBtn = (d, label) => `<button data-dir="${d}" class="px-2 py-0.5 rounded ${state.dir === d ? 'bg-zinc-200 dark:bg-zinc-800' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'}">${label}</button>`;
   const legend = COLUMNS.map((c) => `<span class="inline-flex items-center gap-1.5">${statusIcon(c.key, 'h-3.5 w-3.5')}${esc(c.label)}</span>`).join('');
-  // Alternate milestones get a faint band, so it reads which tickets belong together.
-  const bands = spans.map(({ start, end }, i) => {
-    if (i % 2) return '';
-    const a = Math.max(-gap / 2, g.layer(start) - gap / 2), b = g.layer(end) - gap / 2;
-    return v
-      ? `<rect x="-16" y="${a}" width="${W + 32}" height="${b - a}" rx="10" class="fill-zinc-500/5"/>`
-      : `<rect x="${a}" y="-16" width="${b - a}" height="${H + 32}" rx="10" class="fill-zinc-500/5"/>`;
+  // Each milestone gets a bordered band, so it reads which tickets belong together. Its leading edge carries the
+  // milestone's status colour and a glow echoes the hero's; parity alternates the tint.
+  // Bands are HTML, so across the layers they stretch to the panel's full width, past the graph's own.
+  const bands = spans.map(({ m, start, end }, i) => {
+    const a = g.layer(start) - gap / 2 + 6, b = g.layer(end) - gap / 2 - 6;
+    const box = v ? `left:-16px;right:-16px;top:${a}px;height:${b - a}px` : `top:-16px;bottom:-16px;left:${a}px;width:${b - a}px`;
+    const even = i % 2;
+    const tone = even
+      ? `bg-gradient-to-${v ? 'r' : 'b'} from-sky-500/[.06] via-transparent to-emerald-500/[.06] border-sky-500/20 dark:border-sky-400/15`
+      : `bg-gradient-to-${v ? 'l' : 't'} from-emerald-500/[.05] via-zinc-500/[.03] to-zinc-500/[.05] border-emerald-500/15 dark:border-emerald-400/10`;
+    const edge = v ? 'inset-y-0 left-0 w-[3px] bg-gradient-to-b' : 'inset-x-0 top-0 h-[3px] bg-gradient-to-r';
+    const glow = even ? '-bottom-24 -left-16 bg-sky-400/10' : '-top-24 -right-16 bg-emerald-400/10';
+    return `<div class="absolute overflow-hidden rounded-xl border ${tone}" style="${box}">
+      <div class="absolute ${edge} ${SPEC_STATUS[specStatus(m.tickets)].accent} opacity-80"></div>
+      <div class="pointer-events-none absolute h-56 w-56 rounded-full blur-3xl ${glow}"></div>
+    </div>`;
   }).join('');
   return `<div class="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30">
   <div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-200 dark:border-zinc-800 px-4 py-2.5 text-xs text-zinc-500">
@@ -771,16 +780,9 @@ function graph(spec) {
     <span class="hidden lg:inline text-zinc-400">· Hover a ticket to trace its dependencies</span>
     <div class="ml-auto inline-flex rounded-md border border-zinc-200 dark:border-zinc-800 p-0.5">${dirBtn('h', 'Horizontal')}${dirBtn('v', 'Vertical')}</div>
   </div>
-  <div data-scroll class="dots overflow-x-auto p-8"><div id="graph" class="relative" style="width:${W}px;height:${H}px">
-    <svg class="absolute inset-0 overflow-visible text-zinc-400" width="${W}" height="${H}">
-      <defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
-      ${bands}
-      ${spans.slice(1).map(({ start }) => {
-        const p = g.layer(start) - gap / 2;
-        return v
-          ? `<line x1="0" y1="${p}" x2="${W}" y2="${p}" class="stroke-zinc-200 dark:stroke-zinc-800" stroke-width="1"/>`
-          : `<line x1="${p}" y1="0" x2="${p}" y2="${H}" class="stroke-zinc-200 dark:stroke-zinc-800" stroke-width="1"/>`;
-      }).join('')}
+  <div data-scroll class="dots overflow-x-auto p-8"><div id="graph" class="relative" style="width:${W}px;min-width:100%;height:${H}px">
+    ${bands}
+    <svg class="absolute left-0 top-0 overflow-visible" width="${W}" height="${H}">
       ${edges.join('')}
     </svg>
     ${spans.map(({ m, start, end }) => {
