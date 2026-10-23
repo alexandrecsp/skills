@@ -247,7 +247,7 @@ function parse(files) {
       const landed = field(text, 'Landed') || '';
       s.landed = /^`?[0-9a-f]{7,40}/i.test(landed) ? landed.replace(/`/g, '').slice(0, 7) : null;
     } else if (p.length === 4 && p[1] === 'milestones' && numOf(p[2])) {
-      if (!s.milestones.has(p[2])) s.milestones.set(p[2], { id: p[2], num: numOf(p[2]), title: unslug(p[2]), path: null, delivers: '', squash: null, tickets: [] });
+      if (!s.milestones.has(p[2])) s.milestones.set(p[2], { id: p[2], num: numOf(p[2]), title: unslug(p[2]), path: null, delivers: '', phase: null, squash: null, tickets: [] });
       const m = s.milestones.get(p[2]);
       if (p[3] === 'milestone.md') {
         m.path = path;
@@ -255,6 +255,7 @@ function parse(files) {
         m.delivers = excerpt(field(text, 'Delivers') || '');
         const squash = field(text, 'Squash') || '';
         m.squash = /^[0-9a-f]{7,40}/i.test(squash) ? squash.slice(0, 7) : null;
+        m.phase = (field(text, 'Phase') || '').replace(/`/g, '').toLowerCase();
       } else if (numOf(p[3])) {
         const deps = field(text, 'Depends on') || '';
         const commit = field(text, 'Commit') || '';
@@ -277,6 +278,7 @@ function parse(files) {
       s.milestones.forEach((m) => m.tickets.sort((a, b) => a.num.localeCompare(b.num)));
       s.tickets = s.milestones.flatMap((m) => m.tickets);
       s.status = specStatus(s.tickets);
+      if (s.status === 'done' && s.milestones.some(isClosing)) s.status = 'active';
       return s;
     })
     .sort((a, b) => a.num.localeCompare(b.num))
@@ -403,6 +405,11 @@ const statusIcon = (s, size = 'h-5 w-5') =>
   : `<span class="${size} shrink-0 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-600"></span>`;
 
 const MILESTONE_LABEL = { active: 'In progress', blocked: 'Blocked', ready: 'Not started', draft: 'No tickets', done: 'Complete' };
+// /build's closing steps after the last ticket, from milestone.md's Phase line; a Squash commit ends them.
+const PHASE_LABEL = { check: 'Checking', review: 'In review', fix: 'Fixing review', squash: 'Squashing' };
+const isClosing = (m) => !m.squash && PHASE_LABEL[m.phase] && m.tickets.length && m.tickets.every((t) => t.status === 'done');
+const milestoneStatus = (m) => (isClosing(m) ? 'active' : specStatus(m.tickets));
+const milestoneLabel = (m) => (isClosing(m) ? PHASE_LABEL[m.phase] : MILESTONE_LABEL[specStatus(m.tickets)]);
 const plural = (n, w, ws = w + 's') => `${n} ${n === 1 ? w : ws}`;
 
 const ticketChip = (t, extra = '') => `
@@ -557,7 +564,7 @@ const milestoneChip = (m) => `<span class="truncate rounded bg-zinc-100 dark:bg-
 
 function list(spec) {
   return `<div class="space-y-5">${spec.milestones.map((m) => {
-    const st = specStatus(m.tickets);
+    const st = milestoneStatus(m);
     return `
     <section class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40">
       <button data-milestone="${esc(m.id)}" class="group flex w-full items-center gap-4 px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900/60">
@@ -566,7 +573,7 @@ function list(spec) {
           <div class="flex flex-wrap items-center gap-2">
             <span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span>
             <span class="font-semibold tracking-tight group-hover:underline">${esc(m.title)}</span>
-            <span class="rounded-full px-2 py-0.5 text-xs font-medium ${SPEC_STATUS[st].tone}">${MILESTONE_LABEL[st]}</span>
+            <span class="rounded-full px-2 py-0.5 text-xs font-medium ${SPEC_STATUS[st].tone}">${milestoneLabel(m)}</span>
           </div>
           ${m.delivers ? `<p class="mt-0.5 truncate text-sm text-zinc-500">${esc(m.delivers)}</p>` : ''}
         </div>
@@ -739,7 +746,7 @@ function graph(spec) {
     const edge = v ? 'inset-y-0 left-0 w-[3px] bg-gradient-to-b' : 'inset-x-0 top-0 h-[3px] bg-gradient-to-r';
     const glow = even ? '-bottom-24 -left-16 bg-sky-400/10' : '-top-24 -right-16 bg-emerald-400/10';
     return `<div class="absolute overflow-hidden rounded-xl border ${tone}" style="${box}">
-      <div class="absolute ${edge} ${SPEC_STATUS[specStatus(m.tickets)].accent} opacity-80"></div>
+      <div class="absolute ${edge} ${SPEC_STATUS[milestoneStatus(m)].accent} opacity-80"></div>
       <div class="pointer-events-none absolute h-56 w-56 rounded-full blur-3xl ${glow}"></div>
     </div>`;
   }).join('');
@@ -850,7 +857,7 @@ function specPanel(spec) {
   const st = SPEC_STATUS[spec.status], ts = spec.tickets, pct = pctOf(ts);
   const doing = ts.filter((t) => isDoing(t.status));
   const blocked = ts.filter((t) => t.status === 'blocked');
-  const msDone = spec.milestones.filter((m) => m.tickets.length && m.tickets.every((t) => t.status === 'done')).length;
+  const msDone = spec.milestones.filter((m) => milestoneStatus(m) === 'done').length;
   const live = [...doing, ...blocked];
   const next = nextTicket(spec);
   const caps = (t) => `<p class="mb-2 text-[11px] font-medium uppercase tracking-widest text-zinc-400">${t}</p>`;
@@ -926,11 +933,11 @@ function resolve(ref) {
   if (ref.kind === 'milestone') {
     const m = spec.milestones.find((m) => m.id === ref.id);
     if (!m) return null;
-    const st = specStatus(m.tickets);
+    const st = milestoneStatus(m);
     return {
       label: 'Milestone', path: m.path, accent: 'bg-gradient-to-r ' + SPEC_STATUS[st].accent, title: m.title,
       kicker: `<span class="font-mono">Milestone M${esc(m.num)}</span>${sep}<span class="truncate">${esc(spec.title)}</span>`,
-      badges: badge(SPEC_STATUS[st].tone, MILESTONE_LABEL[st]) + count(m.tickets) + (m.squash ? `<span class="rounded-md border border-zinc-200 dark:border-zinc-700 px-1.5 font-mono text-xs text-zinc-500">${esc(m.squash)}</span>` : ''),
+      badges: badge(SPEC_STATUS[st].tone, milestoneLabel(m)) + count(m.tickets) + (m.squash ? `<span class="rounded-md border border-zinc-200 dark:border-zinc-700 px-1.5 font-mono text-xs text-zinc-500">${esc(m.squash)}</span>` : ''),
     };
   }
   const t = spec.tickets.find((t) => t.num === ref.id);

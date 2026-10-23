@@ -15,6 +15,10 @@ Run every implementer sub-agent on Sonnet: building a ticket test-first does not
 
 The spec's branch is `sdd/<spec-folder>/spec` and each milestone's is `sdd/<spec-folder>/M<NNN>`, with `NNN` the milestone folder's number, such as `sdd/003-invoice-export/spec` and `sdd/003-invoice-export/M001`: the `sdd/<spec-folder>/` prefix groups a spec's branches, so they are listed and cleaned up with one glob. The **base branch** is the **Base** line of `spec.md`; when it has none, take the remote's default (`git symbolic-ref --short refs/remotes/origin/HEAD`, without `origin/`), or, without a remote, ask the user, and write it into a **Base** line under the **Key** line.
 
+## Phase
+
+Once its tickets are `done`, a milestone is still closing: checked, reviewed, fixed, squashed. Steps 6 to 9 each begin by writing their word into `milestone.md`'s **Phase** line, above **Squash**: `check`, `review`, `fix`, `squash`. The dashboard reads it to show which step is running, until **Squash** names a commit.
+
 ## Process
 
 1. **Pick the milestone.** With a milestone folder, take it. With a spec folder, or without an argument the spec folder from this conversation, take the lowest-numbered milestone that holds a ticket whose **Status** is not `done`. Milestones run in order: when an earlier milestone still holds such a ticket, report it and stop; when every ticket is `done`, follow **Land the spec** instead. Done when you can name the milestone and its tickets that are not `done`.
