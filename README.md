@@ -140,6 +140,7 @@ Every pipeline branch starts with `sdd/`, so `git branch --list 'sdd/*'` finds t
 | `tdd` | Red then green, one vertical slice at a time, with tests only at confirmed seams. |
 | `commit` | `<KEY>: <Present-tense title>` plus one to three bullets. Reads the key from the spec. |
 | `review-changes` | Reviews a diff in two separate sub-agents. **Standards** checks repo docs, glossary, ADRs and the smell baseline. **Spec** checks for missing requirements, scope creep and requirements built wrong. |
+| `pr` | Writes a PR's title and body: a visual **Summary**, before-and-after **Evidence** checked against the spec's claims, and a **Merge Danger** call (one-way or two-way door, blast radius). It opens or updates the PR only when you ask. |
 | `domain-modeling` | Maintains `GLOSSARY.md` and ADRs, including multi-context repos with `GLOSSARY-MAP.md`. |
 | `design-patterns` | A catalogue of patterns and when to choose each one. Each choice is recorded as Pattern, Where and Why. |
 | `project-structure` | One hexagonal layout for every language: `domain/` (entities, value objects, ports), `application/` (use cases, services, DTOs), `infrastructure/` (driving, driven, config). Covers role-suffixed names for TypeScript, Python and Java, and frontend, backend and full-stack apps. The repo's `docs/STRUCTURE.md` overrides it. |
@@ -149,7 +150,7 @@ Every pipeline branch starts with `sdd/`, so `git branch --list 'sdd/*'` finds t
 | `prototype` | Builds a throwaway prototype that answers one design question: a shareable HTML demo for logic, or switchable variants for UI. Keeps it on a `prototype/<slug>` branch and records the verdict. |
 | `improve-and-refactor` | Scans hot spots for deepening and smell refactors, shows them as an HTML report saved to `.sdd/refactors/`, and brainstorms the one you pick. A contained refactor goes straight to `/to-tickets` and `/build`; a larger one starts at `/to-spec`. |
 
-The pipeline skills (`setup-repository`, `brainstorm-with-docs`, `to-spec`, `to-tickets`, `build`) and `improve-and-refactor` only run when you type their command. The others can also be invoked by the agent when it needs them.
+The pipeline skills (`setup-repository`, `brainstorm-with-docs`, `to-spec`, `to-tickets`, `build`), `improve-and-refactor` and `pr` only run when you type their command. The others can also be invoked by the agent when it needs them.
 
 ## Repository layout
 
