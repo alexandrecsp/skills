@@ -93,4 +93,4 @@ A monorepo gets an archetype per app or package (`apps/web` frontend, `apps/api`
 
 ## Recording
 
-`docs/STRUCTURE.md` is the repo's source of truth for layout, committed with the code. Write it as: the archetype and language per app, the tree, the names table in that language's spelling, the dependency rules, and every departure from this skill with its reason. In a repo with code, record the layout it already uses, mapped onto this vocabulary where it fits; moving existing code is a refactor for `improve-and-refactor`, never part of recording.
+`docs/STRUCTURE.md` is the repo's source of truth for layout, committed with the code. Write it as: the dependency rules and departures every app shares, then one section per app headed by its path (`apps/web`), each with its archetype and language, its tree, the names table in its language's spelling, and its own departures, every departure with its reason. Read the section of the app you're placing a file in. In a repo with code, record the layout it already uses, mapped onto this vocabulary where it fits; moving existing code is a refactor for `improve-and-refactor`, never part of recording.
