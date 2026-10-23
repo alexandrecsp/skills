@@ -30,6 +30,8 @@ The two branches build very different things, so a wrong pick wastes the prototy
 The prototype is done when its question has a verdict. Then:
 
 1. **Keep the prototype** as a primary source: commit it on a branch `prototype/<slug>`, off the base branch, and leave the base branch free of prototype code.
-2. **Record the verdict** where the decision lives: in the spec's Further Notes when a spec under `.sdd/specs/` covers the work, with the branch name; otherwise give it to the user with the branch name, to carry into `/brainstorm` or `/to-spec`.
+2. **Hand over the verdict**, by where the work lives:
+   - **Inside a spec**, when a spec under `.sdd/specs/` covers the work: record the verdict in its Further Notes, with the branch name. The pipeline carries it into tickets and the build.
+   - **Standalone**: give the user the verdict and the branch name, and offer to apply it. On a yes, rebuild the decision in the real code, test-first where that code has tests.
 
-The validated decision reaches the real code through the pipeline, rebuilt test-first, never by promoting prototype code. Done when the prototype is on its branch and the verdict is recorded.
+Either way, the real code is rebuilt from the verdict, and the prototype code stays on its branch. Done when the prototype is on its branch, and the verdict is in the spec or with the user alongside the offer to apply it.
