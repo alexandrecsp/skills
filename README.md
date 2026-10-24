@@ -41,7 +41,6 @@ Prepares the repo. It creates `.sdd/`, which holds everything the pipeline share
 
 ```
 .sdd/
-├── dashboard.html   ← open in a browser, pick the .sdd folder, see every spec's tickets and status
 ├── settings.json    ← { "commitKeyPattern": "FUNC-\\d+" } or null
 └── specs/
 ```
@@ -50,7 +49,7 @@ Prepares the repo. It creates `.sdd/`, which holds everything the pipeline share
 
 It also settles the repo's **layout** with `project-structure`. It detects each app's archetype (frontend, backend or full-stack) and writes `docs/STRUCTURE.md`, which is committed. In a repo that already has code, it records the layout the code uses; in an empty repo, it proposes the archetype's hexagonal layout. It then asks whether the repo uses `AGENTS.md` or `CLAUDE.md`, and writes a short **Spec workflow** section there pointing at `docs/STRUCTURE.md`, the glossary and ADRs, and `.sdd/specs/`. `build`'s implementers place and name files by `docs/STRUCTURE.md`, and `review-changes` reviews against it.
 
-It is safe to run again: a rerun refreshes the dashboard and keeps everything else.
+It is safe to run again: a rerun keeps everything already settled, and deletes the per-repo `.sdd/dashboard.html` that older versions copied in.
 
 ### 1. `/brainstorm [topic]`
 
@@ -149,9 +148,10 @@ Every pipeline branch starts with `sdd/`, so `git branch --list 'sdd/*'` finds t
 | `diagnose` | Diagnoses a hard bug or performance regression. It first builds a tight loop that goes red on the bug, then minimises the repro, ranks falsifiable hypotheses, and instruments one variable at a time. It fixes with a regression test at a correct seam, or records that no such seam exists. |
 | `research` | Researches a question against primary sources in a background sub-agent. Saves the cited findings to `.sdd/research/<slug>.md`. |
 | `prototype` | Builds a throwaway prototype that answers one design question: a shareable HTML demo for logic, or switchable variants for UI. Keeps it on a `prototype/<slug>` branch and records the verdict. |
+| `dashboard` | Opens the spec dashboard: one page in Chrome or Edge listing every repo you add to it, with needs-attention repos first. Each repo opens into its specs, milestones and tickets, live while you view it. Nothing is installed: the page opens from the plugin's folder. |
 | `improve-and-refactor` | Scans hot spots for deepening and smell refactors, shows them as an HTML report saved to `.sdd/refactors/`, and brainstorms the one you pick. A contained refactor goes straight to `/to-tickets` and `/build`; a larger one starts at `/to-spec`. |
 
-The pipeline skills (`setup-repository`, `brainstorm-with-docs`, `to-spec`, `to-tickets`, `build`), `improve-and-refactor` and `pr` only run when you type their command. The others can also be invoked by the agent when it needs them.
+The pipeline skills (`setup-repository`, `brainstorm-with-docs`, `to-spec`, `to-tickets`, `build`), `dashboard`, `improve-and-refactor` and `pr` only run when you type their command. The others can also be invoked by the agent when it needs them.
 
 ## Repository layout
 

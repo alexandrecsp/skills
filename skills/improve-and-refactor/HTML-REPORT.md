@@ -2,7 +2,7 @@
 
 One self-contained HTML file. Tailwind and Mermaid come from CDNs; everything else is inline and static. The **diagrams** carry the report: prose stays sparse and plain, and when a diagram needs a paragraph to be understood, redraw the diagram.
 
-The report is a sibling of `.sdd/dashboard.html` and wears its theme: zinc surfaces in light and dark, emerald as the one accent, rounded cards with a gradient accent bar, mono uppercase eyebrows. When this file and the dashboard disagree on a style, the dashboard wins.
+The report wears the theme of the spec dashboard, [dashboard.html](../dashboard/dashboard.html): zinc surfaces in light and dark, emerald as the one accent, rounded cards with a gradient accent bar, mono uppercase eyebrows. When this file and the dashboard disagree on a style, the dashboard wins.
 
 ## Scaffold
 

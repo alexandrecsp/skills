@@ -34,7 +34,7 @@
 
 <header class="sticky top-0 z-20 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur">
   <div class="px-4 h-14 flex items-center gap-3">
-    <button id="brand" class="flex shrink-0 items-center gap-2 font-semibold tracking-tight" title="All specs">
+    <button id="brand" class="flex shrink-0 items-center gap-2 font-semibold tracking-tight" title="All repositories">
       <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-emerald-400 to-sky-500 text-xs font-bold text-white shadow-sm">S</span>SDD
     </button>
     <div id="crumbs" class="flex min-w-0 items-center gap-2 text-sm"></div>
@@ -44,10 +44,9 @@
       <button data-view="graph" class="px-3 py-1 rounded">Graph</button>
     </nav>
     <div class="ml-auto flex items-center gap-2 text-sm">
-      <span id="live" class="hidden items-center gap-1.5 text-xs text-zinc-500" title="Watching the folder for changes"><span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>Live</span>
+      <span id="live" class="hidden items-center gap-1.5 text-xs text-zinc-500" title="Watching this repository for changes"><span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>Live</span>
       <button id="reload" class="hidden rounded-md border border-zinc-200 dark:border-zinc-800 px-3 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-900">Reload</button>
-      <button id="open" class="rounded-md bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-3 py-1 hover:opacity-90">Open folder</button>
-      <input id="picker" type="file" webkitdirectory multiple class="hidden">
+      <button id="open" class="rounded-md bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-3 py-1 hover:opacity-90">Add repo</button>
     </div>
   </div>
 </header>
@@ -94,11 +93,16 @@ const store = {
   set(k, v) { try { localStorage.setItem('sdd:' + k, v); } catch {} },
 };
 
-// The route lives in the hash: #/ is the homepage, #/spec/<id> one spec.
-const routeId = () => { const m = /^#\/spec\/(.+)$/.exec(location.hash); return m ? decodeURIComponent(m[1]) : null; };
-const go = (id) => { location.hash = id ? '#/spec/' + encodeURIComponent(id) : '#/'; };
+// The route lives in the hash: #/ is the repo list, #/r/<repo> a repo's homepage, #/r/<repo>/spec/<id> one spec.
+const route = () => {
+  const m = /^#\/r\/([^/]+)(?:\/spec\/(.+))?$/.exec(location.hash);
+  return m ? { repo: m[1], spec: m[2] ? decodeURIComponent(m[2]) : null } : { repo: null, spec: null };
+};
+const goRepo = (id) => { location.hash = id ? '#/r/' + id : '#/'; };
+const go = (id) => { location.hash = '#/r/' + state.repo.id + (id ? '/spec/' + encodeURIComponent(id) : ''); };
 
-const state = { files: new Map(), handle: null, root: '', specs: [], specId: routeId(), view: store.get('view') || 'list', dir: store.get('dir') || 'h', filter: store.get('filter') || 'all', query: '', doc: null };
+// The open repo's files, specs and name are copied into files, specs and root, so every single-repo view reads them as before.
+const state = { repos: [], repo: null, notice: '', files: new Map(), root: '', specs: [], specId: null, view: store.get('view') || 'list', dir: store.get('dir') || 'h', filter: store.get('filter') || 'all', query: '', doc: null };
 
 // ---------- folder access ----------
 
@@ -116,11 +120,13 @@ function idb(mode, fn) {
   });
 }
 
-async function specsDir(dir) {
-  if (dir.name === 'specs') return dir;
-  try { return await dir.getDirectoryHandle('specs'); } catch {}
-  try { return await (await dir.getDirectoryHandle('.sdd')).getDirectoryHandle('specs'); } catch {}
-  return null;
+// Every file:// page shares one origin, so a fixed key gives each copy of this page, at any plugin version, the same repo list.
+const saveRepos = async () => {
+  try { await idb('readwrite', (s) => s.put(state.repos.map(({ id, name, handle }) => ({ id, name, handle })), 'repos')); } catch {}
+};
+
+async function specsDir(root) {
+  try { return await (await root.getDirectoryHandle('.sdd')).getDirectoryHandle('specs'); } catch { return null; }
 }
 
 async function walk(dir, prefix, out) {
@@ -130,70 +136,108 @@ async function walk(dir, prefix, out) {
   }
 }
 
-// Every file:// page shares one origin, so the saved folder is keyed by this copy's path: each repo's dashboard remembers its own.
-const handleKey = 'handle:' + location.pathname;
-
 const sameFiles = (a, b) => a.size === b.size && [...a].every(([k, v]) => b.get(k) === v);
 
-async function loadHandle(handle) {
-  const specs = await specsDir(handle);
-  if (!specs) return empty(`No <code>specs/</code> folder found in <b>${esc(handle.name)}</b>. Pick the <code>.sdd</code> folder or the repository root.`);
-  const files = new Map();
-  await walk(specs, '', files);
-  if (state.handle === handle && sameFiles(files, state.files)) return;
-  state.handle = handle;
-  state.root = handle.name;
-  setFiles(files);
+// Re-reads one repo and sets its status: 'ok', 'denied' (read permission not granted) or 'missing' (no .sdd/specs left to read).
+// Returns whether its status or files changed.
+async function readRepo(repo) {
+  const before = repo.status;
+  let files = null;
+  try {
+    if ((await repo.handle.queryPermission({ mode: 'read' })) !== 'granted') repo.status = 'denied';
+    else {
+      const specs = await specsDir(repo.handle);
+      if (specs) await walk(specs, '', (files = new Map()));
+      repo.status = specs ? 'ok' : 'missing';
+    }
+  } catch { repo.status = 'missing'; }
+  if (!files || (repo.files && sameFiles(files, repo.files))) return repo.status !== before;
+  repo.files = files;
+  repo.specs = parse(files);
+  return true;
 }
 
-// Re-reads the folder every few seconds while the tab is visible; renders only when a file changed.
+function sync() {
+  state.files = state.repo?.files || new Map();
+  state.specs = state.repo?.specs || [];
+  state.root = state.repo?.name || '';
+}
+
+// Re-reads what is on screen: the open repo, or every repo on the repo list.
+async function refresh() {
+  const repos = state.repo ? [state.repo] : state.repos;
+  if (!(await Promise.all(repos.map(readRepo))).some(Boolean)) return;
+  sync();
+  render();
+  if (state.doc) renderDoc(true);
+}
+
+// Re-reads the open repo every few seconds while the tab is visible; renders only when a file changed.
 let polling = false;
 setInterval(async () => {
-  if (!state.handle || polling || document.hidden) return;
+  if (!state.repo || polling || document.hidden) return;
   polling = true;
-  try { await loadHandle(state.handle); } catch {} finally { polling = false; }
+  try { await refresh(); } finally { polling = false; }
 }, 2000);
 
-async function loadFileList(list) {
-  const files = new Map();
-  const reads = [];
-  for (const f of list) {
-    if (!f.name.endsWith('.md')) continue;
-    const parts = f.webkitRelativePath.split('/');
-    const i = parts.indexOf('specs');
-    if (i < 0) continue;
-    const path = parts.slice(i + 1).join('/');
-    reads.push(f.text().then((t) => files.set(path, t)));
-  }
-  await Promise.all(reads);
-  state.handle = null;
-  state.root = list[0]?.webkitRelativePath.split('/')[0] || '';
-  if (!files.size) return empty('No markdown found under a <code>specs/</code> folder. Pick the <code>.sdd</code> folder.');
-  setFiles(files);
+// A repo shows as its root folder's name; a clashing name takes the first free number suffix.
+function uniqueName(name) {
+  const taken = new Set(state.repos.map((r) => r.name));
+  let n = 1, out = name;
+  while (taken.has(out)) out = `${name} ${++n}`;
+  return out;
 }
 
-async function openFolder() {
-  if (!window.showDirectoryPicker) return $('picker').click();
+async function addRepo() {
   let handle;
   try { handle = await window.showDirectoryPicker({ id: 'sdd', mode: 'read' }); } catch { return; }
-  try { await idb('readwrite', (s) => s.put(handle, handleKey)); } catch {}
-  await loadHandle(handle);
+  for (const r of state.repos) {
+    if (await r.handle.isSameEntry(handle).catch(() => false)) return goRepo(r.id);
+  }
+  if (!(await specsDir(handle))) {
+    state.notice = `No <code>.sdd/specs/</code> folder in <b>${esc(handle.name)}</b>. Pick the repository's root folder, the one holding <code>.sdd</code>, after running <code>/setup-repository</code> there.`;
+    return state.repo ? goRepo(null) : render();
+  }
+  state.notice = '';
+  const repo = { id: Math.random().toString(36).slice(2, 8), name: uniqueName(handle.name), handle };
+  state.repos.push(repo);
+  await saveRepos();
+  await readRepo(repo);
+  goRepo(repo.id);
 }
 
-async function reload() {
-  if (state.handle) return loadHandle(state.handle);
-  $('picker').click();
+async function removeRepo(id) {
+  state.repos = state.repos.filter((r) => r.id !== id);
+  await saveRepos();
+  render();
+}
+
+async function reconnect(repo) {
+  try { await repo.handle.requestPermission({ mode: 'read' }); } catch {}
+  await readRepo(repo);
+  sync();
+  render();
+}
+
+async function applyRoute(read = true) {
+  const { repo, spec } = route();
+  state.repo = state.repos.find((r) => r.id === repo) || null;
+  state.specId = spec;
+  closeDoc();
+  sync();
+  render();
+  window.scrollTo(0, 0);
+  if (read) await refresh();
 }
 
 async function restore() {
-  let handle;
-  try { handle = await idb('readonly', (s) => s.get(handleKey)); } catch {}
-  if (!handle) return empty();
-  if ((await handle.queryPermission({ mode: 'read' })) === 'granted') return loadHandle(handle);
-  empty(`<button id="reconnect" class="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900">Reconnect to <b>${esc(handle.name)}</b></button>`);
-  $('reconnect').onclick = async () => {
-    if ((await handle.requestPermission({ mode: 'read' })) === 'granted') loadHandle(handle);
-  };
+  if (!window.showDirectoryPicker) {
+    $('open').classList.add('hidden');
+    return empty('This dashboard needs Chrome or Edge: it reads your repositories through their folder access.');
+  }
+  try { state.repos = (await idb('readonly', (s) => s.get('repos'))) || []; } catch {}
+  await Promise.all(state.repos.map(readRepo));
+  applyRoute(false);
 }
 
 // ---------- parsing ----------
@@ -291,16 +335,6 @@ function parse(files) {
     });
 }
 
-function setFiles(files) {
-  state.files = files;
-  state.specs = parse(files);
-  $('reload').classList.remove('hidden');
-  $('live').classList.toggle('hidden', !state.handle);
-  $('live').classList.toggle('inline-flex', !!state.handle);
-  render();
-  if (state.doc) renderDoc(true);
-}
-
 // ---------- rendering ----------
 
 const isDoing = (s) => s === 'doing';
@@ -326,17 +360,36 @@ function empty(msg) {
   $('main').innerHTML = `
     <div class="mx-auto max-w-md py-24 text-center space-y-4">
       <h1 class="text-xl font-semibold tracking-tight">Spec dashboard</h1>
-      <p class="text-sm text-zinc-500">Open the repository's <code>.sdd</code> folder to see its specs, milestones and tickets. Nothing leaves your machine.</p>
+      <p class="text-sm text-zinc-500">Specs, milestones and tickets from the repositories you add. Nothing leaves your machine.</p>
       ${msg ? `<div class="text-sm">${msg}</div>` : ''}
     </div>`;
 }
 
+const slash = '<span class="text-zinc-300 dark:text-zinc-700">/</span>';
+function crumbs(spec) {
+  $('crumbs').innerHTML = `${slash}<button data-home class="truncate max-w-[12rem] font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100">${esc(state.root)}</button>`
+    + (spec ? `${slash}<span class="font-mono text-xs text-zinc-400">${esc(spec.num)}</span><span class="hidden sm:inline truncate max-w-xs text-zinc-600 dark:text-zinc-300">${esc(spec.title)}</span>` : '');
+  $('crumbs').querySelector('[data-home]').onclick = () => go(null);
+}
+
 function render() {
-  if (!state.specs.length) return empty('No specs yet. Run <code>/to-spec</code> to write one.');
+  const live = state.repo?.status === 'ok';
+  $('reload').classList.toggle('hidden', !state.repos.length);
+  $('live').classList.toggle('hidden', !live);
+  $('live').classList.toggle('inline-flex', live);
+  if (!state.repo) return repoList();
+  if (!live) {
+    empty(`<p class="text-zinc-500">${GONE[state.repo.status].text}</p>`
+      + (state.repo.status === 'denied' ? '<button id="reconnect" class="mt-4 rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900">Reconnect</button>' : ''));
+    if ($('reconnect')) $('reconnect').onclick = () => reconnect(state.repo);
+    return crumbs(null);
+  }
+  if (!state.specs.length) {
+    empty('No specs yet. Run <code>/to-spec</code> to write one.');
+    return crumbs(null);
+  }
   const spec = state.specs.find((s) => s.id === state.specId);
-  $('crumbs').innerHTML = spec
-    ? `<span class="text-zinc-300 dark:text-zinc-700">/</span><span class="font-mono text-xs text-zinc-400">${esc(spec.num)}</span><span class="hidden sm:inline truncate max-w-xs text-zinc-600 dark:text-zinc-300">${esc(spec.title)}</span>`
-    : '';
+  crumbs(spec);
   $('views').classList.toggle('hidden', !spec);
   panels(spec);
   if (!spec) return home();
@@ -797,6 +850,87 @@ function wireGraph() {
   });
 }
 
+// ---------- repo list ----------
+
+// Repos needing attention (a spec in progress or blocked) come first, then repos with a spec ready to build, then the rest; by name within each.
+const repoTier = (r) => r.status !== 'ok' ? 2
+  : r.specs.some((s) => s.status === 'active' || s.status === 'blocked') ? 0
+  : r.specs.some((s) => s.status === 'ready') ? 1 : 2;
+const TIER = [
+  { label: 'Needs attention', tone: SPEC_STATUS.active.tone, accent: SPEC_STATUS.active.accent },
+  { label: 'Ready to build', tone: SPEC_STATUS.ready.tone, accent: SPEC_STATUS.ready.accent },
+];
+const GONE = {
+  denied: { label: 'Needs permission', text: 'The browser needs your permission to read this folder again.' },
+  missing: { label: 'Missing', text: 'Its <code>.sdd/specs/</code> folder is gone: moved, renamed or deleted.' },
+};
+
+function repoCard(r) {
+  const remove = `<button data-remove="${r.id}" title="Remove from the dashboard" class="-mr-1 shrink-0 rounded-md px-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100">✕</button>`;
+  if (r.status !== 'ok') {
+    const g = GONE[r.status];
+    return `
+    <article class="flex flex-col rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 p-5">
+      <div class="flex items-center gap-2">
+        <h2 class="min-w-0 flex-1 truncate text-lg font-semibold tracking-tight text-zinc-500">${esc(r.name)}</h2>
+        <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(r.status === 'denied' ? 'blocked' : 'todo')}">${g.label}</span>${remove}
+      </div>
+      <p class="mt-2 text-sm text-zinc-500">${g.text}</p>
+      ${r.status === 'denied' ? `<button data-reconnect="${r.id}" class="mt-4 self-start rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900">Reconnect</button>` : ''}
+    </article>`;
+  }
+  const ts = r.specs.flatMap((s) => s.tickets);
+  const tier = TIER[repoTier(r)];
+  const closing = r.specs.flatMap((s) => s.milestones.filter(isClosing).map((m) => ({ s, m })));
+  return `
+    <article data-repo="${r.id}" tabindex="0" class="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 outline-none transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg hover:shadow-zinc-900/5 focus-visible:ring-2 focus-visible:ring-emerald-500 dark:hover:border-zinc-700 dark:hover:shadow-black/40">
+      <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${tier ? tier.accent : SPEC_STATUS.draft.accent}"></div>
+      <div class="flex items-center gap-2">
+        <h2 class="min-w-0 flex-1 truncate text-lg font-semibold tracking-tight transition group-hover:text-emerald-700 dark:group-hover:text-emerald-400">${esc(r.name)}</h2>
+        ${tier ? `<span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${tier.tone}">${tier.label}</span>` : ''}${remove}
+      </div>
+      <div class="mt-4 flex items-center gap-3">
+        ${ring(pctOf(ts), 40, 4, `<span class="text-[10px] font-semibold tabular-nums">${pctOf(ts)}%</span>`)}
+        <div class="text-xs leading-tight">
+          <div class="font-medium text-zinc-700 dark:text-zinc-200">${doneOf(ts)}/${plural(ts.length, 'ticket')}</div>
+          <div class="text-zinc-500">${plural(r.specs.length, 'spec')}</div>
+        </div>
+      </div>
+      ${closing.length ? `<div class="mt-4 space-y-1.5 border-t border-zinc-100 dark:border-zinc-800 pt-3">${closing.map(({ s, m }) => `
+        <p class="flex min-w-0 items-center gap-2 text-xs">
+          <span class="shrink-0 rounded-full px-2 py-0.5 font-medium ${SPEC_STATUS.active.tone}">${esc(milestoneLabel(m))}</span>
+          <span class="font-mono text-zinc-400">${esc(s.num)} · M${esc(m.num)}</span><span class="min-w-0 truncate text-zinc-500">${esc(m.title)}</span>
+        </p>`).join('')}</div>` : ''}
+    </article>`;
+}
+
+function repoList() {
+  $('side').className = 'hidden';
+  $('inspect').className = 'hidden';
+  $('crumbs').innerHTML = '';
+  $('views').classList.add('hidden');
+  const repos = [...state.repos].sort((a, b) => repoTier(a) - repoTier(b) || a.name.localeCompare(b.name));
+  $('main').innerHTML = `
+    <div class="mx-auto max-w-6xl">
+      <p class="font-mono text-xs uppercase tracking-widest text-zinc-500">Spec dashboard</p>
+      <h1 class="mt-1 mb-6 text-3xl font-semibold tracking-tight">Repositories</h1>
+      ${state.notice ? `
+        <div class="mb-6 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          <p class="flex-1">${state.notice}</p><button data-dismiss title="Dismiss" class="shrink-0 hover:opacity-70">✕</button>
+        </div>` : ''}
+      ${repos.length ? `<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">${repos.map(repoCard).join('')}</div>`
+        : `<div class="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 py-16 text-center text-sm text-zinc-500">No repositories yet. Click <b>Add repo</b> and pick a repository's root folder. Nothing leaves your machine.</div>`}
+    </div>`;
+  const dismiss = $('main').querySelector('[data-dismiss]');
+  if (dismiss) dismiss.onclick = () => { state.notice = ''; render(); };
+  $('main').querySelectorAll('[data-repo]').forEach((el) => {
+    el.onclick = () => goRepo(el.dataset.repo);
+    el.onkeydown = (e) => e.key === 'Enter' && e.target === el && goRepo(el.dataset.repo);
+  });
+  $('main').querySelectorAll('[data-remove]').forEach((el) => (el.onclick = (e) => { e.stopPropagation(); removeRepo(el.dataset.remove); }));
+  $('main').querySelectorAll('[data-reconnect]').forEach((el) => (el.onclick = () => reconnect(state.repos.find((r) => r.id === el.dataset.reconnect))));
+}
+
 // ---------- side panels ----------
 
 // The spec list on the left and, with a spec open, its details on the right; both stay put while the centre scrolls.
@@ -1059,16 +1193,10 @@ function closeDoc() {
 
 // ---------- wiring ----------
 
-$('open').onclick = openFolder;
-$('reload').onclick = reload;
-$('picker').onchange = (e) => e.target.files.length && loadFileList(e.target.files);
-$('brand').onclick = () => go(null);
-window.addEventListener('hashchange', () => {
-  state.specId = routeId();
-  closeDoc();
-  if (state.files.size) render();
-  window.scrollTo(0, 0);
-});
+$('open').onclick = addRepo;
+$('reload').onclick = refresh;
+$('brand').onclick = () => goRepo(null);
+window.addEventListener('hashchange', () => applyRoute());
 document.addEventListener('keydown', (e) => {
   if (e.key === '/' && $('search') && document.activeElement !== $('search') && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) {
     e.preventDefault();
@@ -1089,7 +1217,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeDoc();
   if (state.doc && !e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) stepTicket(e.key === 'ArrowLeft' ? -1 : 1);
 });
-window.addEventListener('focus', () => state.handle && loadHandle(state.handle));
+window.addEventListener('focus', refresh);
 
 restore();
 </script>
