@@ -17,7 +17,7 @@ The spec's branch is `sdd/<spec-folder>/spec` and each milestone's is `sdd/<spec
 
 ## Phase
 
-Once its tickets are `done`, a milestone is still closing: checked, reviewed, fixed, squashed. Steps 6 to 9 each begin by writing their word into `milestone.md`'s **Phase** line, above **Squash**: `check`, `review`, `fix`, `squash`. The dashboard reads it to show which step is running, until **Squash** names a commit.
+Once its tickets are `done`, a milestone is still closing: checked, reviewed, fixed, squashed. Steps 6 to 9 each begin by writing their word into `milestone.md`'s **Phase** line, above **Squash**: `check`, `review`, `fix`, `squash`. Step 6 writes `failed` when it gives up on a failing check, and step 7 writes `ask` before asking the user about escalated findings. The dashboard reads it to show which step is running, and that the build waits on the user while it reads `failed` or `ask`, until **Squash** names a commit.
 
 ## Process
 
@@ -39,9 +39,9 @@ Once its tickets are `done`, a milestone is still closing: checked, reviewed, fi
 
    When a sub-agent could not build its ticket, set its **Status** to `blocked`, report that to the user and stop: the tickets after it may depend on it. Done when every ticket in the milestone is `done` and committed.
 
-6. **Check the increment.** Run the full suite and the check in `milestone.md`'s **Done when**. When either fails, dispatch an implementer sub-agent with the failure, then run both again. After two failed fixes, report the failure to the user and stop. Done when both pass.
+6. **Check the increment.** Run the full suite and the check in `milestone.md`'s **Done when**. When either fails, dispatch an implementer sub-agent with the failure, then run both again. After two failed fixes, write `failed` into the **Phase** line, report the failure to the user and stop. Done when both pass.
 
-7. **Review.** Invoke the `review-changes` skill with the fixed point and the milestone folder, and show the user the report. When it flags findings **escalate**, ask the user how to resolve each one: fix it as proposed, fix it another way, or skip it. Otherwise go on without asking. Done when the user has answered every escalated finding, or none was flagged.
+7. **Review.** Invoke the `review-changes` skill with the fixed point and the milestone folder, and show the user the report. When it flags findings **escalate**, write `ask` into the **Phase** line, then ask the user how to resolve each one: fix it as proposed, fix it another way, or skip it. Otherwise go on without asking. Done when the user has answered every escalated finding, or none was flagged.
 
 8. **Fix.** Fix every finding not flagged escalate, plus the escalated ones as the user resolved them, in one implementer sub-agent that runs the full suite and commits by invoking the `commit` skill with the spec folder. Do not run `review-changes` again: the sub-agent checks only the findings it fixed, so the fix does not turn into a review loop. Done when the fixes are committed with the suite passing, or there was nothing to fix.
 

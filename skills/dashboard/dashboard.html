@@ -322,7 +322,8 @@ function parse(files) {
       s.milestones.forEach((m) => m.tickets.sort((a, b) => a.num.localeCompare(b.num)));
       s.tickets = s.milestones.flatMap((m) => m.tickets);
       s.status = specStatus(s.tickets);
-      if (s.status === 'done' && s.milestones.some(isClosing)) s.status = 'active';
+      if (s.milestones.some((m) => milestoneStatus(m) === 'attention')) s.status = 'attention';
+      else if (s.status === 'done' && s.milestones.some(isClosing)) s.status = 'active';
       return s;
     })
     .sort((a, b) => a.num.localeCompare(b.num))
@@ -337,13 +338,21 @@ function parse(files) {
 
 // ---------- rendering ----------
 
+// Every status the page shows, at every level: a repo, a spec and a milestone each take one of these keys, and a ticket's Status maps onto one.
+// attention is the build waiting on the user's answers; blocked, on a ticket the user must unblock.
+const STATUS = {
+  attention: { label: 'Needs attention', tone: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300', accent: 'from-red-500 to-rose-600' },
+  blocked: { label: 'Blocked', tone: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300', accent: 'from-red-400 to-rose-500' },
+  active: { label: 'In progress', tone: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300', accent: 'from-amber-400 to-orange-500' },
+  waiting: { label: 'Waiting', tone: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300', accent: 'from-violet-400 to-purple-500' },
+  ready: { label: 'Ready to build', tone: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300', accent: 'from-sky-400 to-indigo-500' },
+  draft: { label: 'Needs tickets', tone: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300', accent: 'from-zinc-300 to-zinc-400 dark:from-zinc-700 dark:to-zinc-600' },
+  done: { label: 'Done', tone: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300', accent: 'from-emerald-400 to-teal-500' },
+};
+const TICKET_STATUS = { todo: 'draft', doing: 'active', blocked: 'blocked', done: 'done' };
+
 const isDoing = (s) => s === 'doing';
-const statusTone = (s) =>
-  s === 'done' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-  : s === 'todo' ? 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-  : isDoing(s) ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-  : s === 'blocked' ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'
-  : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300';
+const statusTone = (s) => STATUS[TICKET_STATUS[s] || 'draft'].tone;
 const pill = (s) => `<span class="shrink-0 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(s)}">${isDoing(s) ? '<span class="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>' : ''}${esc(s)}</span>`;
 const cardTone = (s) =>
   s === 'done' ? 'border-emerald-300 dark:border-emerald-900'
@@ -417,14 +426,6 @@ function render() {
 
 // ---------- homepage ----------
 
-const SPEC_STATUS = {
-  active: { label: 'In progress', tone: statusTone('doing'), accent: 'from-amber-400 to-orange-500' },
-  blocked: { label: 'Blocked', tone: statusTone('blocked'), accent: 'from-red-400 to-rose-500' },
-  waiting: { label: 'Waiting', tone: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300', accent: 'from-violet-400 to-purple-500' },
-  ready: { label: 'Ready to build', tone: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300', accent: 'from-sky-400 to-indigo-500' },
-  draft: { label: 'Needs tickets', tone: statusTone('todo'), accent: 'from-zinc-300 to-zinc-400 dark:from-zinc-700 dark:to-zinc-600' },
-  done: { label: 'Done', tone: statusTone('done'), accent: 'from-emerald-400 to-teal-500' },
-};
 const doneOf = (ts) => ts.filter((t) => t.status === 'done').length;
 const pctOf = (ts) => (ts.length ? Math.round((doneOf(ts) / ts.length) * 100) : 0);
 
@@ -457,12 +458,20 @@ const statusIcon = (s, size = 'h-5 w-5') =>
   : s === 'blocked' ? `<span class="grid ${size} shrink-0 place-items-center rounded-full bg-red-500 text-[11px] font-bold text-white">!</span>`
   : `<span class="${size} shrink-0 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-600"></span>`;
 
-const MILESTONE_LABEL = { active: 'In progress', blocked: 'Blocked', ready: 'Not started', draft: 'No tickets', done: 'Complete' };
 // /build's closing steps after the last ticket, from milestone.md's Phase line; a Squash commit ends them.
-const PHASE_LABEL = { check: 'Checking', review: 'In review', fix: 'Fixing review', squash: 'Squashing' };
+// ask is the review waiting on the user's answers and failed a check /build gave up fixing: both wait on the user; the others run on their own.
+const PHASE_LABEL = { check: 'Checking', failed: 'Check failed', review: 'In review', ask: 'Awaiting your answers', fix: 'Fixing review', squash: 'Squashing' };
+const waitsOnUser = (m) => m.phase === 'ask' || m.phase === 'failed';
 const isClosing = (m) => !m.squash && PHASE_LABEL[m.phase] && m.tickets.length && m.tickets.every((t) => t.status === 'done');
-const milestoneStatus = (m) => (isClosing(m) ? 'active' : specStatus(m.tickets));
-const milestoneLabel = (m) => (isClosing(m) ? PHASE_LABEL[m.phase] : MILESTONE_LABEL[specStatus(m.tickets)]);
+const milestoneStatus = (m) => (isClosing(m) ? (waitsOnUser(m) ? 'attention' : 'active') : specStatus(m.tickets));
+const milestoneLabel = (m) => (isClosing(m) ? PHASE_LABEL[m.phase] : STATUS[milestoneStatus(m)].label);
+const milestonePill = (m) => `<span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS[milestoneStatus(m)].tone}">${esc(milestoneLabel(m))}</span>`;
+// A closing milestone's step, with its spec's number when shown outside the spec.
+const closingRow = (m, s) => `
+  <p class="flex min-w-0 items-center gap-2 px-2 py-1 text-xs">
+    ${milestonePill(m)}<span class="font-mono text-zinc-400">${s ? `${esc(s.num)} · ` : ''}M${esc(m.num)}</span><span class="min-w-0 truncate text-zinc-500">${esc(m.title)}</span>
+  </p>`;
+const closingOf = (specs) => specs.flatMap((s) => s.milestones.filter(isClosing).map((m) => ({ s, m })));
 const plural = (n, w, ws = w + 's') => `${n} ${n === 1 ? w : ws}`;
 
 const ticketChip = (t, extra = '') => `
@@ -498,10 +507,12 @@ function homeHero() {
   const ms = state.specs.flatMap((s) => s.milestones);
   const doing = all.filter((t) => isDoing(t.status));
   const blocked = all.filter((t) => t.status === 'blocked');
+  const closing = closingOf(state.specs);
   const pct = pctOf(all);
-  const headline = doing.length ? `${doing.length} ticket${doing.length === 1 ? '' : 's'} in flight`
+  const headline = blocked.length || closing.some(({ m }) => waitsOnUser(m)) ? 'Waiting on you'
+    : doing.length ? `${doing.length} ticket${doing.length === 1 ? '' : 's'} in flight`
+    : closing.length ? milestoneLabel(closing[0].m)
     : all.length && pct === 100 ? 'Everything shipped'
-    : blocked.length ? 'Waiting on you'
     : all.length ? 'Ready to build' : 'Specs await tickets';
   const tile = (label, value, sub, tone = '') => `
     <div class="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 px-4 py-3 backdrop-blur">
@@ -531,10 +542,10 @@ function homeHero() {
           ${tile('Blocked', blocked.length, 'tickets', blocked.length ? 'text-red-600 dark:text-red-400' : '')}
         </dl>
       </div>
-      ${attention.length ? `
+      ${attention.length || closing.length ? `
         <div class="relative mt-6 border-t border-zinc-200 dark:border-zinc-800 pt-4">
           <p class="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-500">Now building</p>
-          <div class="grid gap-1 sm:grid-cols-2">${attention.map((t) => ticketChip(t, `<span class="hidden md:inline truncate max-w-[40%] text-xs text-zinc-400">${esc(t.spec.title)}</span>`)).join('')}</div>
+          <div class="grid gap-1 sm:grid-cols-2">${closing.map(({ s, m }) => closingRow(m, s)).join('')}${attention.map((t) => ticketChip(t, `<span class="hidden md:inline truncate max-w-[40%] text-xs text-zinc-400">${esc(t.spec.title)}</span>`)).join('')}</div>
         </div>` : ''}
     </div>`;
   wireTicketRefs($('hero'));
@@ -548,7 +559,7 @@ function homeGrid() {
     ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
     : 'border-zinc-200 text-zinc-600 hover:border-zinc-400 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-600'}">${label} <span class="ml-0.5 opacity-60">${n}</span></button>`;
   $('filters').innerHTML = chip('all', 'All', state.specs.length)
-    + Object.entries(SPEC_STATUS).filter(([k]) => counts[k]).map(([k, v]) => chip(k, v.label, counts[k])).join('');
+    + Object.entries(STATUS).filter(([k]) => counts[k]).map(([k, v]) => chip(k, v.label, counts[k])).join('');
   $('filters').querySelectorAll('[data-filter]').forEach((b) => (b.onclick = () => { state.filter = b.dataset.filter; store.set('filter', state.filter); homeGrid(); }));
 
   const q = state.query.trim().toLowerCase();
@@ -566,10 +577,11 @@ function homeGrid() {
 }
 
 function card(s) {
-  const st = SPEC_STATUS[s.status];
+  const st = STATUS[s.status];
   const live = s.tickets.filter((t) => isDoing(t.status) || t.status === 'blocked');
+  const closing = s.milestones.filter(isClosing);
   const next = s.milestones.find((m) => m.tickets.some((t) => t.status !== 'done'));
-  const foot = live.length ? `<div class="space-y-0.5">${live.slice(0, 3).map((t) => ticketChip(t)).join('')}${live.length > 3 ? `<p class="px-2 text-xs text-zinc-400">+${live.length - 3} more</p>` : ''}</div>`
+  const foot = live.length || closing.length ? `<div class="space-y-0.5">${closing.map((m) => closingRow(m)).join('')}${live.slice(0, 3).map((t) => ticketChip(t)).join('')}${live.length > 3 ? `<p class="px-2 text-xs text-zinc-400">+${live.length - 3} more</p>` : ''}</div>`
     : s.status === 'waiting' ? `<p class="truncate text-xs text-violet-600 dark:text-violet-400">Waiting on ${s.waiting.map((d) => `<span class="font-mono">${esc(numOf(d.id))}</span>`).join(', ')}</p>`
     : s.status === 'draft' ? `<p class="text-xs text-zinc-500">Run <code class="font-mono">/to-tickets</code> to plan the build.</p>`
     : s.status === 'done' ? `<p class="text-xs text-emerald-600 dark:text-emerald-400">✓ All ${plural(s.milestones.length, 'milestone')} complete</p>`
@@ -616,9 +628,7 @@ const commitChip = (t) => t.commit
 const milestoneChip = (m) => `<span class="truncate rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">M${esc(m.num)} · ${esc(m.title)}</span>`;
 
 function list(spec) {
-  return `<div class="space-y-5">${spec.milestones.map((m) => {
-    const st = milestoneStatus(m);
-    return `
+  return `<div class="space-y-5">${spec.milestones.map((m) => `
     <section class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40">
       <button data-milestone="${esc(m.id)}" class="group flex w-full items-center gap-4 px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900/60">
         ${ring(pctOf(m.tickets), 40, 4, `<span class="text-[10px] font-semibold tabular-nums">${pctOf(m.tickets)}%</span>`)}
@@ -626,7 +636,7 @@ function list(spec) {
           <div class="flex flex-wrap items-center gap-2">
             <span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span>
             <span class="font-semibold tracking-tight group-hover:underline">${esc(m.title)}</span>
-            <span class="rounded-full px-2 py-0.5 text-xs font-medium ${SPEC_STATUS[st].tone}">${milestoneLabel(m)}</span>
+            ${milestonePill(m)}
           </div>
           ${m.delivers ? `<p class="mt-0.5 truncate text-sm text-zinc-500">${esc(m.delivers)}</p>` : ''}
         </div>
@@ -645,8 +655,7 @@ function list(spec) {
           </li>`).join('')}
         ${m.tickets.length ? '' : '<li class="px-5 py-3 text-sm text-zinc-500">No tickets in this milestone.</li>'}
       </ul>
-    </section>`;
-  }).join('')}</div>`;
+    </section>`).join('')}</div>`;
 }
 
 const columnAccent = (c) => (c === 'done' ? 'bg-emerald-500' : isDoing(c) ? 'bg-amber-500' : c === 'blocked' ? 'bg-red-500' : 'bg-zinc-300 dark:bg-zinc-700');
@@ -799,7 +808,7 @@ function graph(spec) {
     const edge = v ? 'inset-y-0 left-0 w-[3px] bg-gradient-to-b' : 'inset-x-0 top-0 h-[3px] bg-gradient-to-r';
     const glow = even ? '-bottom-24 -left-16 bg-sky-400/10' : '-top-24 -right-16 bg-emerald-400/10';
     return `<div class="absolute overflow-hidden rounded-xl border ${tone}" style="${box}">
-      <div class="absolute ${edge} ${SPEC_STATUS[milestoneStatus(m)].accent} opacity-80"></div>
+      <div class="absolute ${edge} ${STATUS[milestoneStatus(m)].accent} opacity-80"></div>
       <div class="pointer-events-none absolute h-56 w-56 rounded-full blur-3xl ${glow}"></div>
     </div>`;
   }).join('');
@@ -852,14 +861,15 @@ function wireGraph() {
 
 // ---------- repo list ----------
 
-// Repos needing attention (a spec in progress or blocked) come first, then repos with a spec ready to build, then the rest; by name within each.
-const repoTier = (r) => r.status !== 'ok' ? 2
-  : r.specs.some((s) => s.status === 'active' || s.status === 'blocked') ? 0
-  : r.specs.some((s) => s.status === 'ready') ? 1 : 2;
-const TIER = [
-  { label: 'Needs attention', tone: SPEC_STATUS.active.tone, accent: SPEC_STATUS.active.accent },
-  { label: 'Ready to build', tone: SPEC_STATUS.ready.tone, accent: SPEC_STATUS.ready.accent },
-];
+// A repo takes its most urgent spec's status: the user's turn (a spec awaiting answers or blocked), then work running, then a spec ready to build.
+// Repos sort in that order, then the rest; by name within each.
+const REPO_ORDER = ['attention', 'active', 'ready'];
+const repoStatus = (r) => {
+  if (r.status !== 'ok') return null;
+  const has = (...ks) => r.specs.some((s) => ks.includes(s.status));
+  return has('attention', 'blocked') ? 'attention' : has('active') ? 'active' : has('ready') ? 'ready' : null;
+};
+const repoTier = (r) => { const i = REPO_ORDER.indexOf(repoStatus(r)); return i < 0 ? REPO_ORDER.length : i; };
 const GONE = {
   denied: { label: 'Needs permission', text: 'The browser needs your permission to read this folder again.' },
   missing: { label: 'Missing', text: 'Its <code>.sdd/specs/</code> folder is gone: moved, renamed or deleted.' },
@@ -880,14 +890,14 @@ function repoCard(r) {
     </article>`;
   }
   const ts = r.specs.flatMap((s) => s.tickets);
-  const tier = TIER[repoTier(r)];
-  const closing = r.specs.flatMap((s) => s.milestones.filter(isClosing).map((m) => ({ s, m })));
+  const st = repoStatus(r);
+  const closing = closingOf(r.specs);
   return `
     <article data-repo="${r.id}" tabindex="0" class="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 outline-none transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg hover:shadow-zinc-900/5 focus-visible:ring-2 focus-visible:ring-emerald-500 dark:hover:border-zinc-700 dark:hover:shadow-black/40">
-      <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${tier ? tier.accent : SPEC_STATUS.draft.accent}"></div>
+      <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${STATUS[st || 'draft'].accent}"></div>
       <div class="flex items-center gap-2">
         <h2 class="min-w-0 flex-1 truncate text-lg font-semibold tracking-tight transition group-hover:text-emerald-700 dark:group-hover:text-emerald-400">${esc(r.name)}</h2>
-        ${tier ? `<span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${tier.tone}">${tier.label}</span>` : ''}${remove}
+        ${st ? `<span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS[st].tone}">${STATUS[st].label}</span>` : ''}${remove}
       </div>
       <div class="mt-4 flex items-center gap-3">
         ${ring(pctOf(ts), 40, 4, `<span class="text-[10px] font-semibold tabular-nums">${pctOf(ts)}%</span>`)}
@@ -896,11 +906,7 @@ function repoCard(r) {
           <div class="text-zinc-500">${plural(r.specs.length, 'spec')}</div>
         </div>
       </div>
-      ${closing.length ? `<div class="mt-4 space-y-1.5 border-t border-zinc-100 dark:border-zinc-800 pt-3">${closing.map(({ s, m }) => `
-        <p class="flex min-w-0 items-center gap-2 text-xs">
-          <span class="shrink-0 rounded-full px-2 py-0.5 font-medium ${SPEC_STATUS.active.tone}">${esc(milestoneLabel(m))}</span>
-          <span class="font-mono text-zinc-400">${esc(s.num)} · M${esc(m.num)}</span><span class="min-w-0 truncate text-zinc-500">${esc(m.title)}</span>
-        </p>`).join('')}</div>` : ''}
+      ${closing.length ? `<div class="-mx-2 mt-4 space-y-0.5 border-t border-zinc-100 dark:border-zinc-800 pt-3">${closing.map(({ s, m }) => closingRow(m, s)).join('')}</div>` : ''}
     </article>`;
 }
 
@@ -969,7 +975,7 @@ function specList(spec) {
     </button>
     <p class="px-2.5 pb-1.5 pt-5 text-[11px] font-medium uppercase tracking-widest text-zinc-400">Specs · ${state.specs.length}</p>
     ${[...state.specs].reverse().map((s) => {
-      const sel = s === spec, st = SPEC_STATUS[s.status];
+      const sel = s === spec, st = STATUS[s.status];
       return `<button data-go="${esc(s.id)}" class="mb-1 block w-full rounded-lg px-2.5 py-2 text-left ${sel ? 'bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800' : 'hover:bg-zinc-100 dark:hover:bg-zinc-900/70'}">
         <div class="flex items-center gap-2 text-sm">
           <span class="h-2 w-2 shrink-0 rounded-full bg-gradient-to-r ${st.accent}" title="${st.label}"></span>
@@ -988,11 +994,12 @@ const nextTicket = (spec) => spec.tickets.find((t) => t.status === 'todo'
   && t.deps.every((d) => (spec.tickets.find((x) => x.num === d)?.status ?? 'done') === 'done'));
 
 function specPanel(spec) {
-  const st = SPEC_STATUS[spec.status], ts = spec.tickets, pct = pctOf(ts);
+  const st = STATUS[spec.status], ts = spec.tickets, pct = pctOf(ts);
   const doing = ts.filter((t) => isDoing(t.status));
   const blocked = ts.filter((t) => t.status === 'blocked');
   const msDone = spec.milestones.filter((m) => milestoneStatus(m) === 'done').length;
   const live = [...doing, ...blocked];
+  const closing = spec.milestones.filter(isClosing);
   const next = nextTicket(spec);
   const caps = (t) => `<p class="mb-2 text-[11px] font-medium uppercase tracking-widest text-zinc-400">${t}</p>`;
   const of = (n, total) => `${n}<span class="text-xs font-normal text-zinc-400">/${total}</span>`;
@@ -1024,8 +1031,8 @@ function specPanel(spec) {
         ${d.spec?.landed ? `<span class="text-xs text-emerald-600 dark:text-emerald-400" title="Landed as ${esc(d.spec.landed)}">Landed</span>`
           : `<span class="text-xs text-violet-600 dark:text-violet-400">${d.spec ? 'Not landed' : 'Missing'}</span>`}
       </button>`).join('')}</div></div>` : ''}
-    ${live.length ? `<div>${caps('Now building')}<div class="-mx-2 space-y-0.5">${live.map((t) => ticketChip(t)).join('')}</div></div>` : ''}
-    ${next && !live.length ? `<div>${caps('Up next')}
+    ${live.length || closing.length ? `<div>${caps('Now building')}<div class="-mx-2 space-y-0.5">${closing.map((m) => closingRow(m)).join('')}${live.map((t) => ticketChip(t)).join('')}</div></div>` : ''}
+    ${next && !live.length && !closing.length ? `<div>${caps('Up next')}
       <button data-ticket-ref="${esc(spec.id)}|${esc(next.num)}" class="flex w-full items-start gap-2.5 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 px-3 py-2.5 text-left hover:border-zinc-400 dark:hover:border-zinc-500">
         ${statusIcon(next.status, 'h-4 w-4 mt-0.5')}
         <span class="min-w-0"><span class="block text-sm font-medium leading-snug">${esc(next.title)}</span><span class="text-xs text-zinc-500"><span class="font-mono">#${esc(next.num)}</span> · M${esc(next.milestone.num)} ${esc(next.milestone.title)}</span></span>
@@ -1035,7 +1042,7 @@ function specPanel(spec) {
         <div class="flex items-center gap-2 text-xs">
           <span class="font-mono text-zinc-400">M${esc(m.num)}</span>
           <span class="min-w-0 flex-1 truncate text-zinc-700 group-hover:underline dark:text-zinc-200">${esc(m.title)}</span>
-          <span class="tabular-nums text-zinc-500">${doneOf(m.tickets)}/${m.tickets.length}</span>
+          ${isClosing(m) ? milestonePill(m) : `<span class="tabular-nums text-zinc-500">${doneOf(m.tickets)}/${m.tickets.length}</span>`}
         </div>
         <div class="mt-1.5">${fill(m, 'h-1')}</div>
       </button>`).join('')}</div></div>` : ''}
@@ -1057,7 +1064,7 @@ function resolve(ref) {
   const count = (ts) => `<span class="inline-flex items-center gap-1.5 text-xs text-zinc-500">${ring(pctOf(ts), 14, 2.5)}${doneOf(ts)}/${plural(ts.length, 'ticket')} done</span>`;
   const sep = '<span class="text-zinc-300 dark:text-zinc-700">·</span>';
   if (ref.kind === 'spec') {
-    const st = SPEC_STATUS[spec.status];
+    const st = STATUS[spec.status];
     return {
       label: 'Spec', path: spec.path, accent: 'bg-gradient-to-r ' + st.accent, title: spec.title,
       kicker: `<span class="font-mono">Spec ${esc(spec.num)}</span>`,
@@ -1069,9 +1076,9 @@ function resolve(ref) {
     if (!m) return null;
     const st = milestoneStatus(m);
     return {
-      label: 'Milestone', path: m.path, accent: 'bg-gradient-to-r ' + SPEC_STATUS[st].accent, title: m.title,
+      label: 'Milestone', path: m.path, accent: 'bg-gradient-to-r ' + STATUS[st].accent, title: m.title,
       kicker: `<span class="font-mono">Milestone M${esc(m.num)}</span>${sep}<span class="truncate">${esc(spec.title)}</span>`,
-      badges: badge(SPEC_STATUS[st].tone, milestoneLabel(m)) + count(m.tickets) + (m.squash ? `<span class="rounded-md border border-zinc-200 dark:border-zinc-700 px-1.5 font-mono text-xs text-zinc-500">${esc(m.squash)}</span>` : ''),
+      badges: milestonePill(m) + count(m.tickets) + (m.squash ? `<span class="rounded-md border border-zinc-200 dark:border-zinc-700 px-1.5 font-mono text-xs text-zinc-500">${esc(m.squash)}</span>` : ''),
     };
   }
   const t = spec.tickets.find((t) => t.num === ref.id);
