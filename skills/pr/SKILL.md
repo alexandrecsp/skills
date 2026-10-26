@@ -5,9 +5,6 @@ argument-hint: "[base] [spec-path]"
 disable-model-invocation: true
 metadata:
   type: process
-  credits:
-    - "Summary visuals: Dex Horthy's show-me, https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
-    - "Template: Matt Pocock's pr, https://github.com/mattpocock/skills/tree/main/skills/engineering/pr"
 ---
 
 A PR body shows the reviewer the **shape** of the change before they open the diff, the **evidence** that it works, and the **merge danger**. It opens on its first heading, and its prose is the one sentence each visual or claim needs, in the glossary's terms.

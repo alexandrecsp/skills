@@ -4,8 +4,6 @@ description: Diagnose a hard bug or performance regression through a red feedbac
 argument-hint: "[symptom]"
 metadata:
   type: process
-  credits:
-    - "Matt Pocock's diagnosing-bugs, https://github.com/mattpocock/skills/tree/main/skills/engineering/diagnosing-bugs"
 ---
 
 Diagnosis is a loop: a **tight** command that goes **red** on this bug and **green** once it is fixed. Every later step (minimising, hypothesising, instrumenting, fixing) consumes that loop, so the loop is the hard part and the rest is mechanical. Each step below is a gate: the next starts only when the current one's **Done when** holds.
