@@ -869,8 +869,9 @@ function graph(spec) {
       <div class="pointer-events-none absolute h-56 w-56 rounded-full blur-3xl ${glow}"></div>
     </div>`;
   }).join('');
-  return `<div class="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30">
-  <div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-200 dark:border-zinc-800 px-4 py-2.5 text-xs text-zinc-500">
+  // overflow-clip, not overflow-hidden, so the toolbar can stick below the page header while the graph scrolls.
+  return `<div class="overflow-clip rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30">
+  <div class="sticky top-14 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur px-4 py-2.5 text-xs text-zinc-500">
     ${legend}
     <span class="hidden lg:inline text-zinc-400">· Hover a ticket to trace its dependencies</span>
     <button data-cross class="ml-auto rounded-md border border-zinc-200 dark:border-zinc-800 px-2 py-1 ${state.cross ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'hover:text-zinc-900 dark:hover:text-zinc-100'}" aria-pressed="${state.cross}" title="Draw dependencies between milestones">Cross-milestone</button>
@@ -885,7 +886,7 @@ function graph(spec) {
       const a = g.layer(start), len = g.layer(end) - gap - a;
       const box = v ? `left:0;top:${a}px;width:${G.gutter - 24}px;height:${len}px` : `left:${a}px;top:0;width:${len}px`;
       return `
-      <button data-milestone="${esc(m.id)}" class="group absolute scroll-m-16 flex ${v ? 'items-center' : 'items-start justify-center'}" style="${box}">
+      <button data-milestone="${esc(m.id)}" class="group absolute scroll-m-16 scroll-mt-32 flex ${v ? 'items-center' : 'items-start justify-center'}" style="${box}">
         <span class="flex max-w-full ${v ? 'flex-col items-start gap-1 rounded-lg px-3 py-2' : 'items-center gap-2 rounded-full px-3 py-1'} border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/90 text-left text-sm shadow-sm group-hover:border-zinc-400 dark:group-hover:border-zinc-500">
           <span class="flex shrink-0 items-center gap-1.5">${ring(pctOf(m.tickets), 14, 2.5)}<span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span></span>
           <span class="${v ? 'line-clamp-2' : 'truncate'} font-medium">${esc(m.title)}</span>
