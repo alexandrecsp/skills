@@ -9,7 +9,7 @@ metadata:
 
 Build one **milestone** per call, from the files `to-tickets` wrote under `.sdd/specs/NNN-<slug>/`. Each ticket is built by an **implementer sub-agent** in a fresh context, the milestone closes with one `review-changes` over its whole diff, and it is squashed from its own branch into the spec's branch as one commit. Once every milestone is in, the spec's branch lands on the base (see **Land the spec**). Everything stays local: never push, fetch or open a PR; the user pushes by hand.
 
-Run every implementer sub-agent on Sonnet: building a ticket test-first does not need the session's model, and the implementers spend most of the milestone's tokens. Talk to sub-agents through **context pointers**: the paths of the ticket, its `milestone.md` and the `spec.md`, rather than their contents.
+Dispatch every implementer sub-agent as the `alper-skills:implementer` agent. Talk to sub-agents through **context pointers**: the paths of the ticket, its `milestone.md` and the `spec.md`, rather than their contents.
 
 ## Branches
 
@@ -23,7 +23,7 @@ Once its tickets are `done`, a milestone is still closing: checked, reviewed, fi
 
 1. **Pick the milestone.** With a milestone folder, take it. With a spec folder, or without an argument the spec folder from this conversation, take the lowest-numbered milestone that holds a ticket whose **Status** is not `done`. Milestones run in order: when an earlier milestone still holds such a ticket, report it and stop; when every ticket is `done`, follow **Land the spec** instead. Done when you can name the milestone and its tickets that are not `done`.
 
-2. **Check the dependencies.** Skip this unless the picked milestone is the spec's first and none of its tickets has left `todo`: a later call already passed it. For each spec named in the **Depends on** line of `spec.md`, which is absent or `None` when there are none: when its folder is missing under `.sdd/specs/`, report it and stop; when its `spec.md` has no **Landed** line, or `git merge-base --is-ancestor <its Landed SHA> <its Base>` fails, report that this spec waits on it and stop. Then dispatch one sub-agent per dependency, on Sonnet, in parallel, with the paths of both `spec.md` files and this brief:
+2. **Check the dependencies.** Skip this unless the picked milestone is the spec's first and none of its tickets has left `todo`: a later call already passed it. For each spec named in the **Depends on** line of `spec.md`, which is absent or `None` when there are none: when its folder is missing under `.sdd/specs/`, report it and stop; when its `spec.md` has no **Landed** line, or `git merge-base --is-ancestor <its Landed SHA> <its Base>` fails, report that this spec waits on it and stop. Then dispatch one `alper-skills:reviewer` agent per dependency, in parallel, with the paths of both `spec.md` files and this brief:
 
    > Check whether the dependency was built as this spec assumes. For each bullet of this spec's **Relies On** section that names the dependency, read the code on the base and the Notes of the dependency's tickets, and report the bullet as **holds** or **drifted**, with what the code does instead. Change nothing.
 

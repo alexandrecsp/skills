@@ -158,4 +158,5 @@ The pipeline skills (`setup-repository`, `brainstorm-with-docs`, `to-spec`, `to-
 ```
 .claude-plugin/   plugin.json and marketplace.json
 skills/<name>/    SKILL.md plus any reference files it points to
+agents/           the sub-agents the skills dispatch, each pinned to a model
 ```

@@ -1,6 +1,6 @@
 {
   "name": "alper-skills",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Alper's spec-driven agent skills: brainstorm, spec and ticket flows under .sdd/, test-first builds, code review, domain modelling and codebase design.",
   "author": {
     "name": "Alexandre",
@@ -14,5 +14,6 @@
     "code-review",
     "domain-modeling"
   ],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "agents": "./agents/"
 }

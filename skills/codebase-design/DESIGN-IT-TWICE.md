@@ -4,7 +4,7 @@ Explore alternative interfaces for a module with parallel sub-agents. Based on "
 
 1. **Frame the problem space.** Write the user a short explanation of the problem: the constraints any new interface must satisfy, the dependencies it relies on with their categories from [DEEPENING.md](DEEPENING.md), and a rough code sketch that makes the constraints concrete (an illustration, not a proposal). Show it, then go straight to step 2: the user reads while the sub-agents work. Done when the user has the explanation.
 
-2. **Spawn sub-agents.** Spawn 3 or more in parallel, each with its own technical brief (file paths, coupling details, dependency categories, what sits behind the seam) and a different design constraint:
+2. **Spawn sub-agents.** Spawn 3 or more `alper-skills:designer` agents in parallel, each with its own technical brief (file paths, coupling details, dependency categories, what sits behind the seam) and a different design constraint:
 
    - Agent 1: "Minimise the interface: 1 to 3 entry points, maximum leverage per entry point."
    - Agent 2: "Maximise flexibility: support many use cases and extension."
