@@ -103,7 +103,7 @@ const goRepo = (id) => { location.hash = id ? '#/r/' + id : '#/'; };
 const go = (id) => { location.hash = '#/r/' + state.repo.id + (id ? '/spec/' + encodeURIComponent(id) : ''); };
 
 // The open repo's files, specs and name are copied into files, specs and root, so every single-repo view reads them as before.
-const state = { repos: [], repo: null, notice: '', files: new Map(), root: '', specs: [], specId: null, view: store.get('view') || 'list', dir: store.get('dir') || 'h', cross: store.get('cross') === '1', filter: store.get('filter') || 'all', query: '', doc: null };
+const state = { repos: [], repo: null, notice: '', files: new Map(), root: '', specs: [], specId: null, view: store.get('view') || 'list', dir: store.get('dir') || 'h', cross: store.get('cross') === '1', filter: store.get('filter') || 'all', sideOpen: store.get('side') !== '0', query: '', doc: null };
 
 // ---------- folder access ----------
 
@@ -275,7 +275,7 @@ function specStatus(ts) {
 function parse(files) {
   const specs = new Map();
   const spec = (dir) => {
-    if (!specs.has(dir)) specs.set(dir, { id: dir, num: numOf(dir), title: unslug(dir), key: null, path: null, summary: '', stories: 0, deps: [], landed: null, milestones: new Map() });
+    if (!specs.has(dir)) specs.set(dir, { id: dir, num: numOf(dir), title: unslug(dir), key: null, path: null, summary: '', stories: 0, deps: [], landed: null, abandoned: null, review: null, milestones: new Map() });
     return specs.get(dir);
   };
   for (const [path, text] of files) {
@@ -291,8 +291,11 @@ function parse(files) {
       s.deps = (field(text, 'Depends on') || '').split(',').map((d) => d.replace(/[`\s]/g, '')).filter(numOf);
       const landed = field(text, 'Landed') || '';
       s.landed = /^`?[0-9a-f]{7,40}/i.test(landed) ? landed.replace(/`/g, '').slice(0, 7) : null;
+      s.abandoned = field(text, 'Abandoned') || null;
+    } else if (p.length === 2 && p[1] === 'review.md') {
+      s.review = path;
     } else if (p.length === 4 && p[1] === 'milestones' && numOf(p[2])) {
-      if (!s.milestones.has(p[2])) s.milestones.set(p[2], { id: p[2], num: numOf(p[2]), title: unslug(p[2]), path: null, delivers: '', phase: null, squash: null, tickets: [] });
+      if (!s.milestones.has(p[2])) s.milestones.set(p[2], { id: p[2], num: numOf(p[2]), title: unslug(p[2]), path: null, review: null, delivers: '', phase: null, squash: null, tickets: [] });
       const m = s.milestones.get(p[2]);
       if (p[3] === 'milestone.md') {
         m.path = path;
@@ -301,6 +304,8 @@ function parse(files) {
         const squash = field(text, 'Squash') || '';
         m.squash = /^[0-9a-f]{7,40}/i.test(squash) ? squash.slice(0, 7) : null;
         m.phase = (field(text, 'Phase') || '').replace(/`/g, '').toLowerCase();
+      } else if (p[3] === 'review.md') {
+        m.review = path;
       } else if (numOf(p[3])) {
         const deps = field(text, 'Depends on') || '';
         const commit = field(text, 'Commit') || '';
@@ -333,6 +338,8 @@ function parse(files) {
       s.deps = s.deps.map((id) => ({ id, spec: all.find((x) => x.id === id) }));
       s.waiting = s.deps.filter((d) => !d.spec?.landed);
       if (s.waiting.length && (s.status === 'draft' || s.status === 'ready')) s.status = 'waiting';
+      // An Abandoned line retires the spec, whatever its tickets say.
+      if (s.abandoned) s.status = 'abandoned';
       return s;
     });
 }
@@ -349,6 +356,7 @@ const STATUS = {
   ready: { label: 'Ready to build', tone: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300', accent: 'from-sky-400 to-indigo-500' },
   draft: { label: 'Needs tickets', tone: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300', accent: 'from-zinc-300 to-zinc-400 dark:from-zinc-700 dark:to-zinc-600' },
   done: { label: 'Done', tone: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300', accent: 'from-emerald-400 to-teal-500' },
+  abandoned: { label: 'Abandoned', tone: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400', accent: 'from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-700' },
 };
 const TICKET_STATUS = { todo: 'draft', doing: 'active', blocked: 'blocked', done: 'done' };
 
@@ -420,7 +428,7 @@ function render() {
   $('main').querySelectorAll('[data-ticket]').forEach((el) => (el.onclick = () => openTicket(spec, el.dataset.ticket)));
   $('main').querySelectorAll('[data-milestone]').forEach((el) => {
     const m = spec.milestones.find((m) => m.id === el.dataset.milestone);
-    el.onclick = () => openDoc([milestoneRef(spec, m), specRef(spec)]);
+    el.onclick = () => openMilestone(spec, m);
   });
   if (state.view === 'graph') wireGraph();
   // Opening a spec's graph, or turning it, brings the first unfinished milestone into view. A refresh keeps the place.
@@ -484,6 +492,8 @@ const closingRow = (m, s) => `
     ${milestonePill(m)}<span class="font-mono text-zinc-400">${s ? `${esc(s.num)} · ` : ''}M${esc(m.num)}</span><span class="min-w-0 truncate text-zinc-500">${esc(m.title)}</span>
   </p>`;
 const closingOf = (specs) => specs.flatMap((s) => s.milestones.filter(isClosing).map((m) => ({ s, m })));
+// The specs still meant to be built: an abandoned spec's tickets never count towards progress or work in flight.
+const liveSpecs = (specs) => specs.filter((s) => !s.abandoned);
 const plural = (n, w, ws = w + 's') => `${n} ${n === 1 ? w : ws}`;
 
 const ticketChip = (t, extra = '') => `
@@ -515,11 +525,12 @@ function home() {
 }
 
 function homeHero() {
-  const all = state.specs.flatMap((s) => s.tickets);
-  const ms = state.specs.flatMap((s) => s.milestones);
+  const specs = liveSpecs(state.specs);
+  const all = specs.flatMap((s) => s.tickets);
+  const ms = specs.flatMap((s) => s.milestones);
   const doing = all.filter((t) => isDoing(t.status));
   const blocked = all.filter((t) => t.status === 'blocked');
-  const closing = closingOf(state.specs);
+  const closing = closingOf(specs);
   const pct = pctOf(all);
   const headline = blocked.length || closing.some(({ m }) => waitsOnUser(m)) ? 'Waiting on you'
     : doing.length ? `${doing.length} ticket${doing.length === 1 ? '' : 's'} in flight`
@@ -544,11 +555,11 @@ function homeHero() {
           <div>
             ${state.root ? `<p class="font-mono text-xs uppercase tracking-widest text-zinc-500">${esc(state.root)}</p>` : ''}
             <h1 class="mt-1 text-3xl font-semibold tracking-tight">${headline}</h1>
-            <p class="mt-1 text-sm text-zinc-500">${doneOf(all)} of ${all.length} tickets done across ${state.specs.length} spec${state.specs.length === 1 ? '' : 's'}.</p>
+            <p class="mt-1 text-sm text-zinc-500">${doneOf(all)} of ${all.length} tickets done across ${specs.length} spec${specs.length === 1 ? '' : 's'}.</p>
           </div>
         </div>
         <dl class="grid w-full grid-cols-2 gap-3 sm:grid-cols-4 lg:ml-auto lg:w-auto">
-          ${tile('Specs', state.specs.length, `${state.specs.filter((s) => s.status === 'done').length} done`)}
+          ${tile('Specs', specs.length, `${specs.filter((s) => s.status === 'done').length} done`)}
           ${tile('Milestones', ms.length, `${ms.filter((m) => m.tickets.length && m.tickets.every((t) => t.status === 'done')).length} done`)}
           ${tile('Doing', doing.length, 'tickets', doing.length ? 'text-amber-600 dark:text-amber-400' : '')}
           ${tile('Blocked', blocked.length, 'tickets', blocked.length ? 'text-red-600 dark:text-red-400' : '')}
@@ -593,7 +604,8 @@ function card(s) {
   const live = s.tickets.filter((t) => isDoing(t.status) || t.status === 'blocked');
   const closing = s.milestones.filter(isClosing);
   const next = s.milestones.find((m) => m.tickets.some((t) => t.status !== 'done'));
-  const foot = live.length || closing.length ? `<div class="space-y-0.5">${closing.map((m) => closingRow(m)).join('')}${live.slice(0, 3).map((t) => ticketChip(t)).join('')}${live.length > 3 ? `<p class="px-2 text-xs text-zinc-400">+${live.length - 3} more</p>` : ''}</div>`
+  const foot = s.abandoned ? `<p class="truncate text-xs text-zinc-500">Abandoned · ${esc(s.abandoned)}</p>`
+    : live.length || closing.length ? `<div class="space-y-0.5">${closing.map((m) => closingRow(m)).join('')}${live.slice(0, 3).map((t) => ticketChip(t)).join('')}${live.length > 3 ? `<p class="px-2 text-xs text-zinc-400">+${live.length - 3} more</p>` : ''}</div>`
     : s.status === 'waiting' ? `<p class="truncate text-xs text-violet-600 dark:text-violet-400">Waiting on ${s.waiting.map((d) => `<span class="font-mono">${esc(numOf(d.id))}</span>`).join(', ')}</p>`
     : s.status === 'draft' ? `<p class="text-xs text-zinc-500">Run <code class="font-mono">/to-tickets</code> to plan the build.</p>`
     : s.status === 'done' ? `<p class="text-xs text-emerald-600 dark:text-emerald-400">✓ All ${plural(s.milestones.length, 'milestone')} complete</p>`
@@ -960,9 +972,9 @@ function repoCard(r) {
       ${r.status === 'denied' ? `<button data-reconnect="${r.id}" class="mt-4 self-start rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900">Reconnect</button>` : ''}
     </article>`;
   }
-  const ts = r.specs.flatMap((s) => s.tickets);
+  const ts = liveSpecs(r.specs).flatMap((s) => s.tickets);
   const st = repoStatus(r);
-  const closing = closingOf(r.specs);
+  const closing = closingOf(liveSpecs(r.specs));
   return `
     <article data-repo="${r.id}" tabindex="0" class="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 outline-none transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg hover:shadow-zinc-900/5 focus-visible:ring-2 focus-visible:ring-emerald-500 dark:hover:border-zinc-700 dark:hover:shadow-black/40">
       <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${STATUS[st || 'draft'].accent}"></div>
@@ -1014,7 +1026,7 @@ function repoList() {
 const PANEL = 'sticky top-14 h-[calc(100vh-3.5rem)] shrink-0 overflow-y-auto border-zinc-200 dark:border-zinc-800';
 
 function panels(spec) {
-  $('side').className = `${PANEL} w-[272px] border-r bg-zinc-50/70 dark:bg-zinc-900/30`;
+  $('side').className = `${PANEL} ${state.sideOpen ? 'w-[272px]' : 'w-14'} border-r bg-zinc-50/70 dark:bg-zinc-900/30`;
   $('side').innerHTML = specList(spec);
   wirePanel($('side'), spec);
   if (!spec) {
@@ -1027,23 +1039,40 @@ function panels(spec) {
   wirePanel($('inspect'), spec);
 }
 
+// Collapses the spec list to a rail of spec numbers, or expands it back; the choice survives reloads.
+function toggleSide() {
+  state.sideOpen = !state.sideOpen;
+  store.set('side', state.sideOpen ? '1' : '0');
+  panels(state.specs.find((s) => s.id === state.specId));
+}
+
 function wirePanel(root, spec) {
+  root.querySelectorAll('[data-side-toggle]').forEach((el) => (el.onclick = toggleSide));
   root.querySelectorAll('[data-home]').forEach((el) => (el.onclick = () => go(null)));
   root.querySelectorAll('[data-go]').forEach((el) => (el.onclick = () => go(el.dataset.go)));
   wireTicketRefs(root);
   if (!spec) return;
-  root.querySelectorAll('[data-open-spec]').forEach((el) => (el.onclick = () => openDoc([specRef(spec)])));
+  root.querySelectorAll('[data-open-spec]').forEach((el) => (el.onclick = () => openDoc([specRef(spec), reviewRef(spec)])));
   root.querySelectorAll('[data-milestone]').forEach((el) => {
     const m = spec.milestones.find((m) => m.id === el.dataset.milestone);
-    el.onclick = () => openDoc([milestoneRef(spec, m), specRef(spec)]);
+    el.onclick = () => openMilestone(spec, m);
   });
 }
 
+const OVERVIEW_ICON = '<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>';
+const sideToggle = () => `<button data-side-toggle title="${state.sideOpen ? 'Collapse' : 'Expand'} the sidebar ( [ )" class="grid h-8 w-8 shrink-0 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100">
+    <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M6 2.5v11"/><path d="${state.sideOpen ? 'M11 6.5L9.5 8l1.5 1.5' : 'M9.5 6.5L11 8l-1.5 1.5'}"/></svg>
+  </button>`;
+
 function specList(spec) {
+  if (!state.sideOpen) return specRail(spec);
   return `<div class="p-3">
-    <button data-home class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-sm ${!spec ? 'bg-white font-medium shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100'}">
-      <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>Overview
-    </button>
+    <div class="flex items-center gap-1">
+      <button data-home class="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-sm ${!spec ? 'bg-white font-medium shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100'}">
+        ${OVERVIEW_ICON}Overview
+      </button>
+      ${sideToggle()}
+    </div>
     <p class="px-2.5 pb-1.5 pt-5 text-[11px] font-medium uppercase tracking-widest text-zinc-400">Specs · ${state.specs.length}</p>
     ${[...state.specs].reverse().map((s) => {
       const sel = s === spec, st = STATUS[s.status];
@@ -1055,6 +1084,23 @@ function specList(spec) {
           <span class="text-xs tabular-nums text-zinc-500">${pctOf(s.tickets)}%</span>
         </div>
         ${s.milestones.length ? `<div class="mt-2 pl-4">${segments(s)}</div>` : ''}
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
+// The collapsed spec list: each spec as its number and status dot, its title in the tooltip.
+function specRail(spec) {
+  const on = 'bg-white shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800';
+  const off = 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100';
+  return `<div class="flex flex-col items-center gap-1 px-2 py-3">
+    ${sideToggle()}
+    <button data-home title="Overview" class="grid h-9 w-9 place-items-center rounded-md ${!spec ? on : off}">${OVERVIEW_ICON}</button>
+    <div class="my-2 h-px w-6 bg-zinc-200 dark:bg-zinc-800"></div>
+    ${[...state.specs].reverse().map((s) => {
+      const st = STATUS[s.status];
+      return `<button data-go="${esc(s.id)}" title="${esc(s.num)} · ${esc(s.title)} · ${st.label} · ${pctOf(s.tickets)}%" class="relative grid h-9 w-9 shrink-0 place-items-center rounded-md font-mono text-xs ${s === spec ? `${on} font-semibold` : off}">
+        ${esc(s.num)}<span class="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-gradient-to-r ${st.accent}"></span>
       </button>`;
     }).join('')}
   </div>`;
@@ -1100,7 +1146,7 @@ function specPanel(spec) {
         <span class="font-mono text-xs text-zinc-400">${esc(numOf(d.id))}</span>
         <span class="min-w-0 flex-1 truncate">${esc(d.spec ? d.spec.title : unslug(d.id))}</span>
         ${d.spec?.landed ? `<span class="text-xs text-emerald-600 dark:text-emerald-400" title="Landed as ${esc(d.spec.landed)}">Landed</span>`
-          : `<span class="text-xs text-violet-600 dark:text-violet-400">${d.spec ? 'Not landed' : 'Missing'}</span>`}
+          : `<span class="text-xs text-violet-600 dark:text-violet-400">${d.spec?.abandoned ? 'Abandoned' : d.spec ? 'Not landed' : 'Missing'}</span>`}
       </button>`).join('')}</div></div>` : ''}
     ${live.length || closing.length ? `<div>${caps('Now building')}<div class="-mx-2 space-y-0.5">${closing.map((m) => closingRow(m)).join('')}${live.map((t) => ticketChip(t)).join('')}</div></div>` : ''}
     ${next && !live.length && !closing.length ? `<div>${caps('Up next')}
@@ -1127,6 +1173,10 @@ function specPanel(spec) {
 const specRef = (spec) => ({ kind: 'spec', spec: spec.id });
 const milestoneRef = (spec, m) => ({ kind: 'milestone', spec: spec.id, id: m.id });
 const ticketRef = (spec, n) => ({ kind: 'ticket', spec: spec.id, id: n });
+// A review belongs to a milestone, or to the spec when it reviewed the whole spec.
+const reviewRef = (spec, m) => ({ kind: 'review', spec: spec.id, id: m?.id });
+// A milestone waiting on your answers opens on its review.
+const openMilestone = (spec, m) => openDoc([milestoneRef(spec, m), reviewRef(spec, m), specRef(spec)], m.phase === 'ask' && m.review ? 1 : 0);
 
 function resolve(ref) {
   const spec = state.specs.find((s) => s.id === ref.spec);
@@ -1150,6 +1200,16 @@ function resolve(ref) {
       label: 'Milestone', path: m.path, accent: 'bg-gradient-to-r ' + STATUS[st].accent, title: m.title,
       kicker: `<span class="font-mono">Milestone M${esc(m.num)}</span>${sep}<span class="truncate">${esc(spec.title)}</span>`,
       badges: milestonePill(m) + count(m.tickets) + (m.squash ? `<span class="rounded-md border border-zinc-200 dark:border-zinc-700 px-1.5 font-mono text-xs text-zinc-500">${esc(m.squash)}</span>` : ''),
+    };
+  }
+  if (ref.kind === 'review') {
+    const m = ref.id && spec.milestones.find((m) => m.id === ref.id);
+    if (ref.id && !m) return null;
+    return {
+      label: 'Review', path: m ? m.review : spec.review, accent: 'bg-gradient-to-r ' + STATUS[m ? milestoneStatus(m) : spec.status].accent,
+      title: `Review of ${m ? m.title : spec.title}`,
+      kicker: m ? `<span class="font-mono">Milestone M${esc(m.num)}</span>${sep}<span class="truncate">${esc(spec.title)}</span>` : `<span class="font-mono">Spec ${esc(spec.num)}</span>`,
+      badges: m ? milestonePill(m) : '',
     };
   }
   const t = spec.tickets.find((t) => t.num === ref.id);
@@ -1193,7 +1253,7 @@ const tasks = (html) => html.replace(/<input (checked="" )?disabled="" type="che
 
 function openTicket(spec, n, active = 0) {
   const t = spec.tickets.find((t) => t.num === n);
-  openDoc([ticketRef(spec, n), milestoneRef(spec, t.milestone), specRef(spec)], active);
+  openDoc([ticketRef(spec, n), milestoneRef(spec, t.milestone), reviewRef(spec, t.milestone), specRef(spec)], active);
 }
 
 function openDoc(refs, active = 0) {
@@ -1280,6 +1340,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     $('search').focus();
   }
+  if (e.key === '[' && !$('side').classList.contains('hidden') && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) toggleSide();
 });
 document.querySelectorAll('#views button').forEach((b) => (b.onclick = () => { state.view = b.dataset.view; store.set('view', state.view); render(); }));
 $('close').onclick = closeDoc;
