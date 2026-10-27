@@ -10,6 +10,7 @@
   .edge { transition: stroke .15s, stroke-width .15s, opacity .15s; }
   .dim .edge:not(.hot) { opacity: .15; }
   .edge.hot { stroke-width: 2.5; }
+  .node.far { box-shadow: 0 0 0 2px rgb(14 165 233 / .7); }
   @keyframes blink { 0%, 100% { border-color: rgb(245 158 11); background-color: rgb(245 158 11 / .18); box-shadow: 0 0 0 3px rgb(245 158 11 / .35); } 50% { border-color: rgb(245 158 11 / .25); background-color: transparent; box-shadow: none; } }
   .doing { animation: blink 1s ease-in-out infinite; }
   .dots { background-image: radial-gradient(rgb(161 161 170 / .12) 1px, transparent 1px); background-size: 18px 18px; }
@@ -102,7 +103,7 @@ const goRepo = (id) => { location.hash = id ? '#/r/' + id : '#/'; };
 const go = (id) => { location.hash = '#/r/' + state.repo.id + (id ? '/spec/' + encodeURIComponent(id) : ''); };
 
 // The open repo's files, specs and name are copied into files, specs and root, so every single-repo view reads them as before.
-const state = { repos: [], repo: null, notice: '', files: new Map(), root: '', specs: [], specId: null, view: store.get('view') || 'list', dir: store.get('dir') || 'h', filter: store.get('filter') || 'all', query: '', doc: null };
+const state = { repos: [], repo: null, notice: '', files: new Map(), root: '', specs: [], specId: null, view: store.get('view') || 'list', dir: store.get('dir') || 'h', cross: store.get('cross') === '1', filter: store.get('filter') || 'all', query: '', doc: null };
 
 // ---------- folder access ----------
 
@@ -422,6 +423,17 @@ function render() {
     el.onclick = () => openDoc([milestoneRef(spec, m), specRef(spec)]);
   });
   if (state.view === 'graph') wireGraph();
+  // Opening a spec's graph, or turning it, brings the first unfinished milestone into view. A refresh keeps the place.
+  const at = state.view === 'graph' && spec.id + '|' + state.dir;
+  if (at && at !== state.scrolledTo) scrollToCurrent();
+  state.scrolledTo = at;
+}
+
+// Scrolls the graph to the first unfinished milestone, the one work is on.
+function scrollToCurrent() {
+  const spec = state.view === 'graph' && state.specs.find((s) => s.id === state.specId);
+  const m = spec && spec.milestones.find((m) => milestoneStatus(m) !== 'done');
+  if (m) $('main').querySelector(`#graph [data-milestone="${CSS.escape(m.id)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'start' });
 }
 
 // ---------- homepage ----------
@@ -689,10 +701,36 @@ function kanban(spec) {
   </div>`;
 }
 
-const G = { colW: 220, gapX: 70, cardH: 58, gapY: 16, top: 44, gapV: 56, gutter: 170 };
+const G = { colW: 220, gapX: 70, cardH: 58, gapY: 16, top: 44, gapV: 56, gutter: 170, laneW: 14 };
+
+// Splits each ticket's dependencies into the ones inside its milestone and the ones from earlier milestones. A
+// dependency another one already implies is dropped (transitive reduction). The graph draws the outer ones only on
+// request, since the milestone order already shows them and their lines cross every band in between; otherwise
+// the card lists them as chips.
+function depsOf(spec) {
+  const byNum = new Map(spec.tickets.map((t) => [t.num, t]));
+  const memo = new Map();
+  const ancestors = (n, seen = new Set()) => {
+    if (memo.has(n)) return memo.get(n);
+    seen.add(n);
+    const out = new Set();
+    for (const d of byNum.get(n)?.deps ?? []) {
+      if (!byNum.has(d) || seen.has(d)) continue;
+      out.add(d);
+      ancestors(d, seen).forEach((a) => out.add(a));
+    }
+    memo.set(n, out);
+    return out;
+  };
+  return new Map(spec.tickets.map((t) => {
+    const deps = t.deps.filter((d) => byNum.has(d) && !t.deps.some((e) => e !== d && ancestors(e).has(d)));
+    const inner = deps.filter((d) => byNum.get(d).milestone === t.milestone);
+    return [t.num, { inner, outer: deps.filter((d) => !inner.includes(d)) }];
+  }));
+}
 
 // Layers each milestone's tickets by dependency depth, so every edge runs forward (rightward or downward).
-function layout(spec) {
+function layout(spec, deps, cardSize) {
   const byNum = new Map(spec.tickets.map((t) => [t.num, t]));
   const col = new Map();
   const spans = [];
@@ -715,17 +753,17 @@ function layout(spec) {
     start = end;
   }
 
-  // An edge that skips layers runs through a lane: an empty slot it holds in each layer it crosses,
+  // An edge that skips layers runs through a lane: a narrow track it holds in each layer it crosses,
   // so it never passes under a card. Edges from the same ticket share one lane and branch off it.
   const reach = new Map();
-  for (const t of spec.tickets) for (const d of t.deps) {
+  for (const t of spec.tickets) for (const d of deps.get(t.num)) {
     if (col.has(d) && col.get(d) < col.get(t.num) - 1) reach.set(d, Math.max(reach.get(d) ?? 0, col.get(t.num) - 1));
   }
   const lane = (d, l) => `~${d}@${l}`;
   const nodes = spec.tickets.map((t) => ({
     id: t.num,
     layer: col.get(t.num),
-    preds: t.deps.filter((d) => col.has(d) && col.get(d) < col.get(t.num)).map((d) => (col.get(d) < col.get(t.num) - 1 ? lane(d, col.get(t.num) - 1) : d)),
+    preds: deps.get(t.num).filter((d) => col.has(d) && col.get(d) < col.get(t.num)).map((d) => (col.get(d) < col.get(t.num) - 1 ? lane(d, col.get(t.num) - 1) : d)),
   }));
   for (const [d, last] of reach) for (let l = col.get(d) + 1; l <= last; l++) {
     nodes.push({ id: lane(d, l), layer: l, preds: [l === col.get(d) + 1 ? d : lane(d, l - 1)] });
@@ -734,13 +772,29 @@ function layout(spec) {
 
   const columns = Array.from({ length: start }, () => []);
   nodes.forEach((n) => columns[n.layer].push(n));
-  const row = new Map();
+  // Places each layer's nodes along the slot axis, in pixels: a node aims for the middle of its predecessors and is
+  // pushed on only as far as the node before it needs. A lane keeps its predecessor's line until something pushes
+  // it, so it runs straight; it takes G.laneW, not a card's width.
+  const isLane = (id) => id.startsWith('~');
+  const size = (id) => (isLane(id) ? 0 : cardSize);
+  const slot = new Map();
+  const mid = (id) => slot.get(id) + size(id) / 2;
+  let extent = 0;
   columns.forEach((ns) => {
-    const bary = (n) => {
-      const rs = n.preds.map((p) => row.get(p)).filter((r) => r != null);
-      return rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : Infinity;
+    const aim = (n) => {
+      const ms = n.preds.filter((p) => slot.has(p)).map(mid);
+      return ms.length ? ms.reduce((a, b) => a + b, 0) / ms.length : Infinity;
     };
-    ns.sort((a, b) => bary(a) - bary(b) || a.id.localeCompare(b.id)).forEach((n, r) => row.set(n.id, r));
+    let cursor = 0;
+    // On a tie a card goes first, so a lane steps around it rather than pushing it off its predecessors.
+    ns.sort((a, b) => aim(a) - aim(b) || isLane(a.id) - isLane(b.id) || a.id.localeCompare(b.id)).forEach((n) => {
+      const pad = isLane(n.id) ? G.laneW / 2 : 0;
+      const want = aim(n) === Infinity ? 0 : aim(n) - size(n.id) / 2;
+      const s = Math.max(want, cursor + pad);
+      slot.set(n.id, s);
+      cursor = s + size(n.id) + (isLane(n.id) ? pad : G.gapY);
+    });
+    extent = Math.max(extent, cursor);
   });
 
   // The lane slots an edge from d to t passes through, in order.
@@ -749,33 +803,36 @@ function layout(spec) {
     for (let l = col.get(d) + 1; l < col.get(t); l++) out.push(lane(d, l));
     return out;
   };
-  return { col, row, spans, route, layers: start, width: Math.max(...columns.map((ns) => ns.length), 1) };
+  return { col, slot, spans, route, layers: start, extent: Math.max(extent - G.gapY, cardSize) };
 }
 
-// Maps layers and slots to pixels: layers run along x when horizontal, along y when vertical.
+// Maps layers and slot offsets to pixels: layers run along x when horizontal, along y when vertical.
 function geometry(dir) {
   return dir === 'v'
-    ? { layer: (l) => l * (G.cardH + G.gapV), slot: (r) => G.gutter + r * (G.colW + G.gapY), at: (l, r) => ({ x: G.gutter + r * (G.colW + G.gapY), y: l * (G.cardH + G.gapV) }) }
-    : { layer: (l) => l * (G.colW + G.gapX), slot: (r) => G.top + r * (G.cardH + G.gapY), at: (l, r) => ({ x: l * (G.colW + G.gapX), y: G.top + r * (G.cardH + G.gapY) }) };
+    ? { layer: (l) => l * (G.cardH + G.gapV), at: (l, s) => ({ x: G.gutter + s, y: l * (G.cardH + G.gapV) }) }
+    : { layer: (l) => l * (G.colW + G.gapX), at: (l, s) => ({ x: l * (G.colW + G.gapX), y: G.top + s }) };
 }
 
 function graph(spec) {
   const v = state.dir === 'v';
-  const { col, row, spans, route, layers, width } = layout(spec);
+  const deps = depsOf(spec);
+  const drawn = new Map([...deps].map(([n, { inner, outer }]) => [n, state.cross ? [...inner, ...outer] : inner]));
+  const { col, slot, spans, route, layers, extent } = layout(spec, drawn, v ? G.colW : G.cardH);
   const g = geometry(state.dir);
-  const pos = new Map(spec.tickets.map((t) => [t.num, { ...g.at(col.get(t.num), row.get(t.num)), t }]));
-  const W = v ? G.gutter + width * (G.colW + G.gapY) : layers * (G.colW + G.gapX) - G.gapX + 20;
-  const H = v ? layers * (G.cardH + G.gapV) - G.gapV + 20 : G.top + width * (G.cardH + G.gapY);
+  const pos = new Map(spec.tickets.map((t) => [t.num, { ...g.at(col.get(t.num), slot.get(t.num)), t }]));
+  const W = v ? G.gutter + extent + 20 : layers * (G.colW + G.gapX) - G.gapX + 20;
+  const H = v ? layers * (G.cardH + G.gapV) - G.gapV + 20 : G.top + extent + 20;
   const gap = v ? G.gapV : G.gapX;
 
   const edges = [];
-  for (const [n, to] of pos) for (const d of to.t.deps) {
+  for (const [n, to] of pos) for (const d of drawn.get(n)) {
     const from = pos.get(d);
     if (!from) continue;
-    // Entry and exit points of a slot, and a curve between them along the layer axis.
-    const box = (id) => g.at(col.get(id), row.get(id));
-    const enter = ({ x, y }) => (v ? [x + G.colW / 2, y] : [x, y + G.cardH / 2]);
-    const exit = ({ x, y }) => (v ? [x + G.colW / 2, y + G.cardH] : [x + G.colW, y + G.cardH / 2]);
+    // Entry and exit points of a card or lane, and a curve between them along the layer axis. A lane is a line,
+    // so its slot offset is already its middle.
+    const box = (id) => g.at(col.get(id), slot.get(id));
+    const enter = ({ x, y }, line) => (v ? [x + (line ? 0 : G.colW / 2), y] : [x, y + (line ? 0 : G.cardH / 2)]);
+    const exit = ({ x, y }, line) => (v ? [x + (line ? 0 : G.colW / 2), y + G.cardH] : [x + G.colW, y + (line ? 0 : G.cardH / 2)]);
     const curve = ([x1, y1], [x2, y2]) => {
       const mid = Math.max(v ? 24 : 30, Math.abs(v ? y2 - y1 : x2 - x1) / 2);
       return v ? ` C${x1},${y1 + mid} ${x2},${y2 - mid} ${x2},${y2}` : ` C${x1 + mid},${y1} ${x2 - mid},${y2} ${x2},${y2}`;
@@ -783,8 +840,8 @@ function graph(spec) {
     let at = exit(from);
     let path = `M${at[0]},${at[1]}`;
     if (col.get(d) < col.get(n)) for (const id of route(d, n)) {
-      path += curve(at, enter(box(id)));
-      at = exit(box(id));
+      path += curve(at, enter(box(id), true));
+      at = exit(box(id), true);
       path += ` L${at[0]},${at[1]}`;
     }
     const [ex, ey] = enter(to);
@@ -816,7 +873,8 @@ function graph(spec) {
   <div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-200 dark:border-zinc-800 px-4 py-2.5 text-xs text-zinc-500">
     ${legend}
     <span class="hidden lg:inline text-zinc-400">· Hover a ticket to trace its dependencies</span>
-    <div class="ml-auto inline-flex rounded-md border border-zinc-200 dark:border-zinc-800 p-0.5">${dirBtn('h', 'Horizontal')}${dirBtn('v', 'Vertical')}</div>
+    <button data-cross class="ml-auto rounded-md border border-zinc-200 dark:border-zinc-800 px-2 py-1 ${state.cross ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'hover:text-zinc-900 dark:hover:text-zinc-100'}" aria-pressed="${state.cross}" title="Draw dependencies between milestones">Cross-milestone</button>
+    <div class="inline-flex rounded-md border border-zinc-200 dark:border-zinc-800 p-0.5">${dirBtn('h', 'Horizontal')}${dirBtn('v', 'Vertical')}</div>
   </div>
   <div data-scroll class="dots overflow-x-auto p-8"><div id="graph" class="relative" style="width:${W}px;min-width:100%;height:${H}px">
     ${bands}
@@ -827,34 +885,46 @@ function graph(spec) {
       const a = g.layer(start), len = g.layer(end) - gap - a;
       const box = v ? `left:0;top:${a}px;width:${G.gutter - 24}px;height:${len}px` : `left:${a}px;top:0;width:${len}px`;
       return `
-      <button data-milestone="${esc(m.id)}" class="group absolute flex ${v ? 'items-center' : 'items-start justify-center'}" style="${box}">
+      <button data-milestone="${esc(m.id)}" class="group absolute scroll-m-16 flex ${v ? 'items-center' : 'items-start justify-center'}" style="${box}">
         <span class="flex max-w-full ${v ? 'flex-col items-start gap-1 rounded-lg px-3 py-2' : 'items-center gap-2 rounded-full px-3 py-1'} border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/90 text-left text-sm shadow-sm group-hover:border-zinc-400 dark:group-hover:border-zinc-500">
           <span class="flex shrink-0 items-center gap-1.5">${ring(pctOf(m.tickets), 14, 2.5)}<span class="font-mono text-xs text-zinc-400">M${esc(m.num)}</span></span>
           <span class="${v ? 'line-clamp-2' : 'truncate'} font-medium">${esc(m.title)}</span>
         </span>
       </button>`;
     }).join('')}
-    ${[...pos.values()].map(({ x, y, t }) => `
-      <div data-ticket="${esc(t.num)}" class="node absolute cursor-pointer rounded-lg border bg-white dark:bg-zinc-950 px-3 py-2 shadow-sm hover:border-zinc-500 hover:shadow-md ${cardTone(t.status)}"
+    ${[...pos.values()].map(({ x, y, t }) => {
+      const { outer } = deps.get(t.num);
+      // Dependencies from earlier milestones, when not drawn: two chips fit beside the number, the rest fold into a count.
+      const chips = outer.length && !state.cross
+        ? `<span class="inline-flex min-w-0 items-center gap-1 text-xs text-zinc-400" title="Depends on, from earlier milestones: ${esc(outer.join(', '))}">↑${outer.slice(0, 2).map((d) => `<span class="rounded bg-zinc-100 dark:bg-zinc-800 px-1 font-mono text-zinc-500">${esc(d)}</span>`).join('')}${outer.length > 2 ? `<span>+${outer.length - 2}</span>` : ''}</span>` : '';
+      return `
+      <div data-ticket="${esc(t.num)}" data-outer="${esc(outer.join(' '))}" class="node absolute cursor-pointer rounded-lg border bg-white dark:bg-zinc-950 px-3 py-2 shadow-sm hover:border-zinc-500 hover:shadow-md ${cardTone(t.status)}"
         style="left:${x}px;top:${y}px;width:${G.colW}px;height:${G.cardH}px">
-        <div class="flex items-center gap-1.5">${statusIcon(t.status, 'h-3.5 w-3.5')}${num(t.num)}<span class="ml-auto">${t.commit ? commitChip(t) : pill(t.status)}</span></div>
+        <div class="flex items-center gap-1.5">${statusIcon(t.status, 'h-3.5 w-3.5')}${num(t.num)}${chips}<span class="ml-auto shrink-0">${t.commit ? commitChip(t) : pill(t.status)}</span></div>
         <div class="mt-1 truncate text-sm font-medium">${esc(t.title)}</div>
-      </div>`).join('')}
+      </div>`;
+    }).join('')}
   </div></div></div>`;
 }
 
 function wireGraph() {
   $('main').querySelectorAll('[data-dir]').forEach((b) => (b.onclick = () => { state.dir = b.dataset.dir; store.set('dir', state.dir); render(); }));
+  $('main').querySelector('[data-cross]').onclick = () => { state.cross = !state.cross; store.set('cross', state.cross ? '1' : '0'); render(); };
   const g = $('graph');
   g.querySelectorAll('.node').forEach((node) => {
     const n = node.dataset.ticket;
+    // Dependencies across milestones have no line, so hovering lights up the cards at their other end instead.
+    const far = [...node.dataset.outer.split(' ').filter(Boolean).map((d) => g.querySelector(`.node[data-ticket="${d}"]`)),
+      ...g.querySelectorAll(`.node[data-outer~="${n}"]`)].filter(Boolean);
     node.onmouseenter = () => {
       g.classList.add('dim');
       g.querySelectorAll(`.edge[data-from="${n}"], .edge[data-to="${n}"]`).forEach((e) => e.classList.add('hot'));
+      far.forEach((f) => f.classList.add('far'));
     };
     node.onmouseleave = () => {
       g.classList.remove('dim');
       g.querySelectorAll('.edge.hot').forEach((e) => e.classList.remove('hot'));
+      far.forEach((f) => f.classList.remove('far'));
     };
   });
 }
@@ -1224,7 +1294,8 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeDoc();
   if (state.doc && !e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) stepTicket(e.key === 'ArrowLeft' ? -1 : 1);
 });
-window.addEventListener('focus', refresh);
+// Coming back to the window also brings the graph back to the milestone work is on.
+window.addEventListener('focus', async () => { await refresh(); scrollToCurrent(); });
 
 restore();
 </script>
