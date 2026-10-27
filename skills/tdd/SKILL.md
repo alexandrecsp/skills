@@ -36,4 +36,11 @@ When the shape of the interface is itself in question (how deep the module is, w
 - **One logical assertion per test.**
 - **Refactor at review.** Refactoring belongs to the `review-changes` skill's findings, outside the red → green cycle. When nothing will review the work afterwards (`build` reviews each milestone), end by offering the user a `review-changes` run.
 
-The loop is done when every behaviour in scope has a test at a confirmed seam that went red, then green, and the full suite passes.
+## Suites
+
+The **slow tests** are the ones that drive a browser, a device or a deployed service: end-to-end tests, mostly. The **fast suite** is everything else: the linter, the typechecker, and the unit and integration tests. The **full suite** is both. The project's scripts tell them apart.
+
+- **Inside the loop**, run the test you are writing, the fast suite, and only the slow test files your slice touches.
+- **Every run is foreground and terse**: under a `timeout`, with a one-line-per-failure reporter, stopping at the first failure, so it hands back its result in one turn and a few lines.
+
+The loop is done when every behaviour in scope has a test at a confirmed seam that went red, then green, and the fast suite and the slow test files you touched pass. Then run the full suite once, unless your brief names a later check that runs it.
