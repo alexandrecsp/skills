@@ -38,9 +38,11 @@ When the shape of the interface is itself in question (how deep the module is, w
 
 ## Suites
 
-The **slow tests** are the ones that drive a browser, a device or a deployed service: end-to-end tests, mostly. The **fast suite** is everything else: the linter, the typechecker, and the unit and integration tests. The **full suite** is both. The project's scripts tell them apart.
+The **e2e suite** is the tests that drive a running app: a browser, a device or a deployed service. The **unit suite** is everything else: the linter, the typechecker, and the unit and integration tests. The **full suite** is both. The **Suites** line of the repo's `AGENTS.md` or `CLAUDE.md` names each one's command; when it is missing, take them from the project's scripts and report that `setup-repository` would record them.
 
-- **Inside the loop**, run the test you are writing, the fast suite, and only the slow test files your slice touches.
-- **Every run is foreground and terse**: under a `timeout`, with a one-line-per-failure reporter, stopping at the first failure, so it hands back its result in one turn and a few lines.
+- **Inside the loop**, run the test you are writing, filtered by its name, and the unit suite.
+- **Your e2e tests** are the e2e tests you wrote or changed. Run each one filtered by its name, never its whole file: red, then green. The rest of its file, and an e2e test that imports a helper you changed or drives a screen you changed, waits for the full suite.
+- **An e2e test outside your tests that fails** belongs to the full suite's run: report it and go on.
+- **Every run is foreground and terse**: give the tool call a timeout longer than the run, so it never moves to the background; use a one-line-per-failure reporter and stop at the first failure, so the run hands back its result in one turn and a few lines.
 
-The loop is done when every behaviour in scope has a test at a confirmed seam that went red, then green, and the fast suite and the slow test files you touched pass. Then run the full suite once, unless your brief names a later check that runs it.
+The loop is done when every behaviour in scope has a test at a confirmed seam that went red, then green, and the unit suite and your e2e tests pass. Then run the full suite once, unless your brief names a later check that runs it.
