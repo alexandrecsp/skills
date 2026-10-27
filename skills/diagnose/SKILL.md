@@ -8,7 +8,7 @@ metadata:
 
 Diagnosis is a loop: a **tight** command that goes **red** on this bug and **green** once it is fixed. Every later step (minimising, hypothesising, instrumenting, fixing) consumes that loop, so the loop is the hard part and the rest is mechanical. Each step below is a gate: the next starts only when the current one's **Done when** holds.
 
-Read the **domain docs** when present: `GLOSSARY.md` and the ADRs in `docs/adr/`; when a `GLOSSARY-MAP.md` exists, the root ADRs plus the `GLOSSARY.md` and `docs/adr/` of each context the bug touches.
+Read the [domain docs](../domain-modeling/DOMAIN-DOCS.md) of the contexts the bug touches.
 
 ## Redact
 

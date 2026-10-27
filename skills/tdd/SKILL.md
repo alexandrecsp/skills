@@ -7,7 +7,7 @@ metadata:
 
 TDD is the **red → green** loop. This skill makes that loop produce tests worth keeping.
 
-Read the **domain docs** when present: `GLOSSARY.md` and the ADRs in `docs/adr/`; when a `GLOSSARY-MAP.md` exists, the root ADRs plus the `GLOSSARY.md` and `docs/adr/` of each context the work touches. Test names and interface vocabulary use the glossary's terms, and the code stays within the ADRs' decisions.
+Read the [domain docs](../domain-modeling/DOMAIN-DOCS.md): test names and interface vocabulary use the glossary's terms.
 
 ## What a good test is
 

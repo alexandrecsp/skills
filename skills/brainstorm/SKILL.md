@@ -81,7 +81,7 @@ Reply with letters (`1B 2A`), `ok` to take every recommendation, or your own ans
 
 ### Facts and Decisions
 
-Finding _facts_ is your job; the user only ever answers _decisions_. When a frontier question needs a fact from the environment (codebase, docs, tools), dispatch a sub-agent to find it. Keep the round moving: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now.
+Finding _facts_ is your job; the user only ever answers _decisions_. When a frontier question needs a fact from the environment (codebase, docs, tools), dispatch an `alper-skills:scout` agent to find it. Keep the round moving: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now.
 
 ### In-flight specs
 

@@ -11,7 +11,7 @@ Explore alternative interfaces for a module with parallel sub-agents. Based on "
    - Agent 3: "Optimise for the most common caller: make the default case trivial."
    - Agent 4, when a dependency crosses the network: "Design around Ports and Adapters for cross-seam dependencies."
 
-   Paste the vocabulary from [SKILL.md](SKILL.md), plus the glossary when present (`GLOSSARY.md`, or the glossary of each context involved when a `GLOSSARY-MAP.md` exists), into every brief, so each design names things in the same terms. Each sub-agent returns:
+   Paste the vocabulary from [SKILL.md](SKILL.md), plus the glossaries of the [domain docs](../domain-modeling/DOMAIN-DOCS.md) when present, into every brief, so each design names things in the same terms. Each sub-agent returns:
 
    1. The interface (types, methods, parameters, plus invariants, ordering, error modes)
    2. A usage example from a caller

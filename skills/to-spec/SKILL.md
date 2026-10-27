@@ -1,6 +1,6 @@
 ---
 name: to-spec
-description: "Turn the current conversation into a spec saved under .sdd/specs/, synthesised from what you've already discussed."
+description: Turn the current conversation into a spec saved under .sdd/specs/.
 disable-model-invocation: true
 metadata:
   type: process
@@ -12,7 +12,7 @@ This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setu
 
 ## Process
 
-1. **Explore.** Read the code the feature touches, unless you already have, plus the **domain docs** when present: `GLOSSARY.md` and the ADRs in `docs/adr/`; when a `GLOSSARY-MAP.md` exists, the root ADRs plus the `GLOSSARY.md` and `docs/adr/` of each context the feature touches. Write the spec in the glossary's terms and within the ADRs' decisions; without them, use the terms the conversation settled. Done when you can name every module the feature builds or changes.
+1. **Explore.** Read the code the feature touches, unless you already have, plus the [domain docs](../domain-modeling/DOMAIN-DOCS.md); without a glossary, use the terms the conversation settled. Done when you can name every module the feature builds or changes.
 
 2. **Settle the dependencies.** Follow [IN-FLIGHT.md](IN-FLIGHT.md) for the modules from step 1; when the conversation already ran it, take its findings and check only the modules it did not cover. Each overlapping spec is a **dependency**: this spec is built after it lands. For each dependency, list the **assumptions** this spec makes about its planned state: an interface, a seam, a behaviour, a term. Follow the **Depends on** lines of each dependency's `spec.md`, and theirs in turn; when one leads back to this spec, report the cycle and drop that dependency. Done when every dependency has its assumptions, and no dependency leads back to this spec.
 
@@ -20,6 +20,6 @@ This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setu
 
 4. **Record patterns.** Take the pattern choices the conversation settled, including a decision that none is needed. When the conversation never weighed patterns, invoke the `design-patterns` skill and choose them by its rules. Done when each choice has its Pattern, Where and Why, or the spec states that none is needed.
 
-5. **Confirm.** Show the user the seams, plus any pattern choices you made in step 4, the dependencies from step 2 with their assumptions, and, when `.sdd/settings.json` sets a `commitKeyPattern`, ask for the spec's **key**, the optional prefix every commit for this spec carries (such as `FUNC-1234`). Done when the user confirms them and gives a key that fully matches the pattern, or none.
+5. **Confirm.** Show the user the seams, plus any pattern choices you made in step 4, the dependencies from step 2 with their assumptions, and the open questions, each with your recommended answer for the user to settle now or leave open. When `.sdd/settings.json` sets a `commitKeyPattern`, ask for the spec's **key**, the optional prefix every commit for this spec carries (such as `FUNC-1234`). Done when the user confirms them, has settled or left open each open question, and gives a key that fully matches the pattern, or none.
 
 6. **Write the spec.** Save it as `spec.md` in a new spec folder, `.sdd/specs/NNN-<slug>/`: `NNN` is one past the highest folder number already there (starting at `001`), and `<slug>` is the spec title in kebab-case. Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md). Done when every section is filled from the conversation, and the user has the spec's path and the next step, `/to-tickets <spec-folder>`.

@@ -13,7 +13,7 @@ This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setu
 
 ## Process
 
-1. **Gather context.** With a `[spec-folder]` argument, read its `spec.md`; without one, use the spec written in this conversation or, failing that, the conversation itself (then each behaviour discussed stands in for a user story, and you propose the seams for the user to confirm in step 4). When the spec folder already holds a `milestones/` folder, report that and stop, unless the user asked for a rewrite. Read the code the work touches, plus the **domain docs** when present: `GLOSSARY.md` and the ADRs in `docs/adr/`; when a `GLOSSARY-MAP.md` exists, the root ADRs plus the `GLOSSARY.md` and `docs/adr/` of each context the work touches. Look for **prefactoring**: a change that makes the later tickets easy. Done when you can name the modules the work changes.
+1. **Gather context.** With a `[spec-folder]` argument, read its `spec.md`; without one, use the spec written in this conversation or, failing that, the conversation itself (then each behaviour discussed stands in for a user story, and you propose the seams for the user to confirm in step 4). When the spec folder already holds a `milestones/` folder, report that and stop, unless the user asked for a rewrite. Read the code the work touches, plus the [domain docs](../domain-modeling/DOMAIN-DOCS.md). Look for **prefactoring**: a change that makes the later tickets easy. When the spec's Further Notes leave a question open that a ticket would build on, ask the user to settle it, and write the answer into Further Notes. Without a spec, follow [IN-FLIGHT.md](../to-spec/IN-FLIGHT.md) for the modules the work changes, unless the conversation already ran it; when it reports an overlapping spec, recommend `/to-spec`, which records the dependency, and stop. Done when you can name the modules the work changes, and no open question a ticket builds on is left.
 
 2. **Cut milestones.** Number them `001` upwards, in order. Each delivers one increment you can verify with a check the builder can run, and builds only on earlier milestones. Prefactoring goes in the first milestone. Done when every user story belongs to exactly one milestone.
 
@@ -32,9 +32,8 @@ This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setu
 
    - Without a spec: are these the right seams, and, when `.sdd/settings.json` sets a `commitKeyPattern`, which key do this work's commits carry (fully matching it, or none)?
    - Does each milestone boundary mark a meaningful increment?
-   - Does the ticket granularity feel right (too coarse, too fine)?
+   - Should any ticket or milestone be merged (too fine) or split (too coarse)?
    - Do the dependencies hold: does each ticket need exactly the tickets its **Depends on** names?
-   - Should any ticket or milestone be merged or split?
 
    Iterate until the user approves. Done when the user approves the breakdown, seams included, and, without a spec, has given the key or none.
 

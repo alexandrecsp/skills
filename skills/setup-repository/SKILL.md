@@ -16,15 +16,13 @@ Prepare the repository for `to-spec`, `to-tickets`, `build` and `commit`. Everyt
 
 It also settles the repo's layout in `docs/STRUCTURE.md`, and points the repo's `AGENTS.md` or `CLAUDE.md` at the framework's files. Both are committed: they are team standards, not pipeline state.
 
-Running it again is safe: it keeps everything already settled unless the user changes it.
-
 ## Process
 
 1. **Find the root.** Work from `git rev-parse --show-toplevel`. When this is not a git repository, report that and stop. Done when you hold the root.
 
 2. **Settle the commit key.** A commit message can start with a **key**, such as `FUNC-1234` or `INC1234`, and `settings.json` stores the regex every key must fully match, or `null` when this repo's commits carry no key. When `.sdd/settings.json` already holds a `commitKeyPattern`, show it and ask whether to keep it. Otherwise ask the user for an example key, or whether commits go without one; given an example, propose a regex for it (`FUNC-1234` → `FUNC-\d+`), and confirm. Done when the user confirms a pattern that fully matches their example, or confirms there is no key.
 
-3. **Write `.sdd/`.** Create `.sdd/specs/`. When an old `.scratch/specs/` exists, ask the user whether to move its spec folders into `.sdd/specs/`, and move them when they agree. Write `.sdd/settings.json` as `{ "commitKeyPattern": "<regex>" }` (or `null`), keeping any other fields already there. When an old `.sdd/dashboard.html` exists, delete it: the `dashboard` skill now serves one page for every repo. Done when `.sdd/specs/` and `.sdd/settings.json` exist and `.sdd/dashboard.html` does not.
+3. **Write `.sdd/`.** Create `.sdd/specs/`. Write `.sdd/settings.json` as `{ "commitKeyPattern": "<regex>" }` (or `null`), keeping any other fields already there. Done when `.sdd/specs/` and `.sdd/settings.json` exist.
 
 4. **Ignore it.** When `git check-ignore -q .sdd/settings.json` fails, ask the user whether to append `.sdd/` to the root `.gitignore` (creating the file when needed), recommending it. When the user declines, or the repo's `.gitignore` is off-limits, append `.sdd/` to `.git/info/exclude` instead: it ignores the folder locally, with nothing to commit. When `git ls-files .sdd` lists files already committed, show them and, when the user agrees, untrack them with `git rm -r --cached .sdd`. Done when the check passes and `git ls-files .sdd` lists nothing.
 

@@ -20,7 +20,7 @@ This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setu
 
 1. **Scope.** Deepening pays back through future changes, so look where change happens (YAGNI). When the user named a module, area or pain point, take it. Otherwise read a long stretch of `git log --stat` and rank the **hot spots**: the files and areas that keep changing. When changes are scattered with no hot spot, widen to the whole codebase. Done when you can name the areas to scan, each with why.
 
-2. **Load the vocabulary.** Invoke the `codebase-design` skill, and use its terms exactly in every candidate. Read the **domain docs** when present: `GLOSSARY.md` and the ADRs in `docs/adr/`; when a `GLOSSARY-MAP.md` exists, the root ADRs plus the `GLOSSARY.md` and `docs/adr/` of each context the areas touch. Modules are named in the glossary's terms ("the Order intake module"), and the ADRs record decisions the candidates respect. Done when you know the terms and the ADR decisions that bind the areas.
+2. **Load the vocabulary.** Invoke the `codebase-design` skill, and use its terms exactly in every candidate. Read the [domain docs](../domain-modeling/DOMAIN-DOCS.md) of the contexts the areas touch: modules are named in the glossary's terms ("the Order intake module"), and the candidates respect the ADRs. Done when you know the terms and the ADR decisions that bind the areas.
 
 3. **Explore.** Dispatch one `alper-skills:explorer` agent in the foreground with the areas, the `codebase-design` vocabulary and principles, the full text of `SMELLS.md`, the glossary, and the ADR decisions (it has no other access to them), and this brief:
 
