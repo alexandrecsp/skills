@@ -58,8 +58,6 @@ Head each round with its phase and its number within that phase (`What · Round 
 
 ✅ **A** - <your recommendation and the one-line reason>
 
----
-
 ## 🔷 <another category>
 
 ### ❓ Q3 - <question title>
@@ -72,9 +70,9 @@ Head each round with its phase and its number within that phase (`What · Round 
 
 ✅ **A** - <your recommendation and the one-line reason>
 
----
-
 ...
+
+---
 
 Reply with letters (`1B 2A`), `ok` to take every recommendation, or your own answer.
 ```
