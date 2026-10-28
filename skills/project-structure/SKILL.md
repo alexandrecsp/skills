@@ -47,7 +47,7 @@ Use these terms exactly; `port` and `adapter` mean what they mean in `codebase-d
 
 - **Dependencies point inward**: infrastructure → application → domain. The domain imports only the domain and the shared kernel.
 - **Use cases take commands and return results.** Driving adapters map their DTOs to and from these, so they never hold a domain entity. Driven adapters implement domain ports in entity terms and map each entity to and from their own model.
-- **The domain holds no DTOs**: entities and value objects carry behaviour, and DTOs live at the boundaries around them.
+- **Entities and value objects are classes**, in every language, carrying state and behaviour together; interfaces are for ports. The domain holds no DTOs: they live at the boundaries around it.
 - **A module's interface is its use cases, application DTOs, and the domain events it publishes.** Another module imports only those, through the module's public entry (`index.ts`, `__init__.py`, the packages [JAVA.md](JAVA.md) names).
 - **Every driven port has two adapters**: production, and the in-memory one use-case tests run on (`codebase-design`'s "two adapters mean a real one").
 - **A folder exists once it holds a file.** A display-only frontend module can be just `infrastructure/driving/`.
