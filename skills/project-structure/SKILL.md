@@ -75,8 +75,8 @@ Entities and value objects take the plain glossary noun: they are the domain's l
 
 Each language spells the same name its own way:
 
-- **TypeScript**: kebab-case, the suffix after a dot: `order.ts`, `order-repository.port.ts`, `place-order.use-case.ts`, `postgres-order-repository.adapter.ts`, `place-order.request.ts`. Tests: `<file>.test.ts`. Folders kebab-case.
-- **Python**: snake_case, the suffix after an underscore: `order.py`, `order_repository_port.py`, `place_order_use_case.py`. Folders snake_case (`value_objects/`); tests in the module's `tests/`, mirroring its folders, named `test_<file>.py`.
+- **TypeScript**: kebab-case: [TYPESCRIPT.md](TYPESCRIPT.md).
+- **Python**: snake_case: [PYTHON.md](PYTHON.md).
 - **Java**: PascalCase class names, packages for folders: [JAVA.md](JAVA.md).
 
 A name the framework reserves (`page.tsx`, `route.ts`, `+page.svelte`) keeps the framework's name: the folder makes it a driving adapter.
@@ -93,4 +93,4 @@ A monorepo gets an archetype per app or package (`apps/web` frontend, `apps/api`
 
 ## Recording
 
-`docs/STRUCTURE.md` is the repo's source of truth for layout, committed with the code. Write it as: the dependency rules and departures every app shares, then one section per app headed by its path (`apps/web`), each with its archetype and language, its tree, the names table in its language's spelling, and its own departures, every departure with its reason. Read the section of the app you're placing a file in. In a repo with code, record the layout it already uses, mapped onto this vocabulary where it fits; moving existing code is a refactor for `improve-and-refactor`, never part of recording.
+`docs/STRUCTURE.md` is the repo's source of truth for layout, committed with the code. Read the section of the app you're placing a file in. To write or update it, follow [RECORDING.md](RECORDING.md).
