@@ -23,6 +23,9 @@
   #doc li:has(.task.checked) { color: rgb(113 113 122); }
   .task { display: inline-grid; place-items: center; width: 1.05em; height: 1.05em; margin-right: .6em; vertical-align: -.15em; border-radius: .3em; border: 1.5px solid rgb(161 161 170 / .7); }
   .task.checked { background: rgb(16 185 129); border-color: rgb(16 185 129); color: white; }
+  #doc pre.drawing { min-height: 7rem; color: transparent; animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .5; } }
+  #zoom svg { width: 100%; height: 100%; max-width: none !important; }
   @supports not selector(::-webkit-scrollbar) { * { scrollbar-width: thin; scrollbar-color: rgb(161 161 170 / .4) transparent; } }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
@@ -85,6 +88,8 @@
     </footer>
   </aside>
 </div>
+
+<div id="zoom" class="hidden fixed inset-0 z-40 bg-white/95 p-10 backdrop-blur dark:bg-zinc-950/95" title="Close (Esc)"></div>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -262,7 +267,7 @@ function section(t, name) {
 }
 
 // The first paragraph of some markdown, as plain text.
-const excerpt = (md) => md.split(/\n\s*\n/)[0].replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_`>#]/g, '').replace(/\s+/g, ' ').trim();
+const excerpt = (md) => md.replace(/^```[\s\S]*?^```/gm, '').trim().split(/\n\s*\n/)[0].replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_`>#]/g, '').replace(/\s+/g, ' ').trim();
 
 function specStatus(ts) {
   if (!ts.length) return 'draft';
@@ -1318,10 +1323,89 @@ function renderDoc(keepScroll) {
   const top = $('docScroll').scrollTop;
   $('doc').innerHTML = html;
   $('doc').dataset.html = html;
+  drawDiagrams(html);
   $('docScroll').scrollTop = keepScroll ? top : 0;
 }
 
+// ---------- diagrams ----------
+
+// Mermaid loads on the first diagram, so documents without one never fetch it. Drawn diagrams are cached
+// by theme and source, so a live reload redraws them without a flash.
+let mermaidLib, mermaidQueue = Promise.resolve(), diagramSeq = 0;
+const darkMode = matchMedia('(prefers-color-scheme: dark)');
+const drawn = new Map();
+const diagramKey = (src) => (darkMode.matches ? 'dark' : 'neutral') + '\n' + src;
+
+// Mermaid renders one diagram at a time, so draws queue up.
+function drawDiagram(src) {
+  const key = diagramKey(src);
+  const run = mermaidQueue.then(async () => {
+    if (drawn.has(key)) return drawn.get(key);
+    mermaidLib ??= import('https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs').then((m) => m.default);
+    const mermaid = await mermaidLib.catch((e) => { mermaidLib = null; throw new Error('Mermaid could not load: ' + e.message); });
+    mermaid.initialize({ startOnLoad: false, theme: darkMode.matches ? 'dark' : 'neutral', securityLevel: 'strict', suppressErrorRendering: true, themeVariables: { fontFamily: 'inherit' } });
+    await mermaid.parse(src);
+    const id = 'mmd' + ++diagramSeq;
+    try {
+      const { svg } = await mermaid.render(id, src);
+      drawn.set(key, svg);
+      return svg;
+    } finally {
+      document.getElementById('d' + id)?.remove();
+    }
+  });
+  mermaidQueue = run.catch(() => {});
+  return run;
+}
+
+const figure = (svg) => `<figure class="not-prose group relative my-6 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+  <button data-zoom class="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-md text-zinc-500 opacity-0 transition hover:bg-zinc-200/70 hover:text-zinc-900 focus:opacity-100 group-hover:opacity-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" title="Expand" aria-label="Expand diagram"><svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5 9 7M2.5 13.5 7 9"/></svg></button>
+  <div class="flex justify-center">${svg}</div>
+</figure>`;
+
+function placeDiagram(pre, svg) {
+  pre.insertAdjacentHTML('afterend', figure(svg));
+  const fig = pre.nextElementSibling;
+  fig.querySelector('[data-zoom]').onclick = () => zoomDiagram(fig.querySelector('div > svg'));
+  pre.remove();
+}
+
+// Swaps each mermaid code block of the open document for its diagram. Cached diagrams go in at once;
+// the rest pulse until drawn. A block that fails stays as code, with the error under it.
+async function drawDiagrams(html) {
+  const pres = [...$('doc').querySelectorAll('pre > code.language-mermaid')].map((c) => c.parentElement);
+  const pending = [];
+  for (const pre of pres) {
+    const svg = drawn.get(diagramKey(pre.textContent));
+    if (svg) placeDiagram(pre, svg);
+    else { pre.classList.add('drawing'); pending.push(pre); }
+  }
+  for (const pre of pending) {
+    let svg, error;
+    try { svg = await drawDiagram(pre.textContent); } catch (e) { error = String(e?.message || e); }
+    if ($('doc').dataset.html !== html || !pre.isConnected) return;
+    pre.classList.remove('drawing');
+    if (svg) placeDiagram(pre, svg);
+    else pre.insertAdjacentHTML('afterend', `<p class="not-prose -mt-4 mb-6 whitespace-pre-wrap text-xs text-red-600 dark:text-red-400">This diagram could not be drawn: <span class="font-mono">${esc(error)}</span></p>`);
+  }
+}
+
+function zoomDiagram(svg) {
+  $('zoom').innerHTML = svg.outerHTML;
+  $('zoom').classList.remove('hidden');
+}
+const closeZoom = () => $('zoom').classList.add('hidden');
+const zoomed = () => !$('zoom').classList.contains('hidden');
+
+// Switching the OS theme redraws the open document's diagrams in the new theme.
+darkMode.addEventListener('change', () => {
+  if (!state.doc) return;
+  $('doc').dataset.html = '';
+  renderDoc(true);
+});
+
 function closeDoc() {
+  closeZoom();
   if (!state.doc) return;
   state.doc = null;
   const d = $('drawer');
@@ -1352,7 +1436,9 @@ $('copyPath').onclick = async () => {
   $('copyPath').textContent = 'Copied';
   setTimeout(() => ($('copyPath').textContent = 'Copy path'), 1200);
 };
+$('zoom').onclick = closeZoom;
 document.addEventListener('keydown', (e) => {
+  if (zoomed()) { if (e.key === 'Escape') closeZoom(); return; }
   if (e.key === 'Escape') closeDoc();
   if (state.doc && !e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) stepTicket(e.key === 'ArrowLeft' ? -1 : 1);
 });

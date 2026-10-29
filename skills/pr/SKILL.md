@@ -47,6 +47,8 @@ Pick the **smallest view** that makes the change's point clear: usually one, som
 - **Shaped diff**: one of the views above with `+` and `-` lines, when the surrounding shape already exists.
 - **Whole block**: most of it is new, or the reviewer needs the target shape.
 
+When the diff builds a spec, start from the diagrams its files already hold: the milestone's **milestone shape**, or the spec's **module map** when the diff builds all of it, as the Mermaid view, with its marks. Trim it to what the diff touches, and redraw it where the build departed from it, as the tickets' Notes and the diff show. The [DIAGRAMS.md](../to-spec/DIAGRAMS.md) entries define both.
+
 Keep only the calls, files, props, states and boundaries the reviewer needs to read the diff. When the diff spans milestones, each milestone's increment gets its own sentence and visual.
 
 ## Evidence

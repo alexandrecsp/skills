@@ -12,6 +12,10 @@ Replace each guidance line with its content. Use the glossary's terms. Describe 
 **Phase:** none
 
 **Squash:** none
+
+## Shape
+
+The **milestone shape**, by [DIAGRAMS.md](../to-spec/DIAGRAMS.md).
 ```
 
 ## NNN-<ticket-slug>.md
@@ -29,7 +33,7 @@ Replace each guidance line with its content. Use the glossary's terms. Describe 
 
 ## What to build
 
-The end-to-end behaviour this ticket makes work, from the user's perspective, rather than a layer-by-layer implementation list.
+The end-to-end behaviour this ticket makes work, from the user's perspective, rather than a layer-by-layer implementation list. Then its **tracer bullet**, by [DIAGRAMS.md](../to-spec/DIAGRAMS.md).
 
 ## Design patterns
 

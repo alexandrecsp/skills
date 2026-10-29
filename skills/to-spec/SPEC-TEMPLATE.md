@@ -13,7 +13,7 @@ The problem the user is facing, from the user's perspective.
 
 ## Solution
 
-The solution to the problem, from the user's perspective.
+The solution to the problem, from the user's perspective. Then its **journey**, by [DIAGRAMS.md](DIAGRAMS.md).
 
 ## User Stories
 
@@ -31,7 +31,7 @@ What this spec deliberately leaves out.
 
 ## Implementation Decisions
 
-The implementation decisions that were made, such as:
+Open with the **module map**, by [DIAGRAMS.md](DIAGRAMS.md). Then the implementation decisions that were made, such as:
 
 - The modules that will be built or modified, and the interfaces that change
 - Technical clarifications from the developer

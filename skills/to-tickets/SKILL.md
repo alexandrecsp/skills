@@ -48,4 +48,4 @@ This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setu
            └── NNN-<ticket-slug>.md   ← one per ticket
    ```
 
-   Done when every milestone folder has its `milestone.md` and at least one ticket, and the user has the spec folder's path and the next step, `/build <spec-id>`, or `/build <spec-id> auto` to build every milestone in one run.
+   Done when every milestone folder has its `milestone.md` and at least one ticket, every diagram slot holds its diagram, and the user has the spec folder's path and the next step, `/build <spec-id>`, or `/build <spec-id> auto` to build every milestone in one run.

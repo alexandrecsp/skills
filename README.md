@@ -33,7 +33,7 @@ The skills then show up as `/alper-skills:<name>`. Below they are written by the
    └─ rebase the spec onto the base → fast-forward the base
 ```
 
-Each stage writes files the next one reads, and each ends by telling you the next command to run. You can stop between any two stages, or join partway through. For example, `/to-tickets` works on the current conversation without a spec, and `review-changes` works on any branch.
+Each stage writes files the next one reads, and each ends by telling you the next command to run. The files carry Mermaid diagrams so you can take them in at a glance: the spec has the user's **journey** and a **module map**, each milestone its slice of that map, each ticket its **tracer bullet** path through the layers, and each review a **finding map** of where its findings land. An ADR with a shape and a research file draw theirs too, and `pr` starts its Summary from the spec's map. `skills/to-spec/DIAGRAMS.md` defines them, and the dashboard draws them. You can stop between any two stages, or join partway through. For example, `/to-tickets` works on the current conversation without a spec, and `review-changes` works on any branch.
 
 ### 0. `/setup-repository`
 
@@ -87,7 +87,7 @@ You review the breakdown (boundaries, granularity, dependencies) until you appro
 ├── spec.md
 └── milestones/
     └── NNN-<milestone-slug>/
-        ├── milestone.md        ← Delivers, Done when, Phase, Squash: <sha>
+        ├── milestone.md        ← Delivers, Done when, Phase, Squash: <sha>, Shape
         ├── NNN-<ticket-slug>.md   ← Status: todo | doing | blocked | done, Commit: <sha>, Depends on, Notes
         └── review.md           ← written by review-changes: the findings, and the arbiter's answers to escalations
 ```
@@ -151,7 +151,7 @@ Every pipeline branch starts with `sdd/`, so `git branch --list 'sdd/*'` finds t
 | `diagnose` | Diagnoses a hard bug or performance regression. It first builds a tight loop that goes red on the bug, then minimises the repro, ranks falsifiable hypotheses, and instruments one variable at a time. It fixes with a regression test at a correct seam, or records that no such seam exists. |
 | `research` | Researches a question against primary sources in a background sub-agent. Saves the cited findings to `.sdd/research/<slug>.md`. |
 | `prototype` | Builds a throwaway prototype that answers one design question: a shareable HTML demo for logic, or switchable variants for UI. Keeps it on a `prototype/<slug>` branch and records the verdict. |
-| `dashboard` | Opens the spec dashboard: one page in Chrome or Edge listing every repo you add to it, with needs-attention repos first. Each repo opens into its specs, milestones, tickets and reviews, live while you view it. Nothing is installed: the page opens from the plugin's folder. |
+| `dashboard` | Opens the spec dashboard: one page in Chrome or Edge listing every repo you add to it, with needs-attention repos first. Each repo opens into its specs, milestones, tickets and reviews, with their diagrams drawn, live while you view it. Nothing is installed: the page opens from the plugin's folder. |
 | `improve-and-refactor` | Scans hot spots for deepening and smell refactors, shows them as an HTML report saved to `.sdd/refactors/`, and brainstorms the one you pick. A contained refactor goes straight to `/to-tickets` and `/build`; a larger one starts at `/to-spec`. |
 
 The pipeline skills (`setup-repository`, `brainstorm-with-docs`, `to-spec`, `to-tickets`, `build`), `dashboard`, `improve-and-refactor` and `pr` only run when you type their command. The others can also be invoked by the agent when it needs them.
