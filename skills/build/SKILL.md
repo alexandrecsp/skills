@@ -9,7 +9,7 @@ metadata:
 
 Build one **milestone** per call, from the files `to-tickets` wrote under `.sdd/specs/NNN-<slug>/`. Each ticket is built by an **implementer sub-agent** in a fresh context, the milestone closes with one `review-changes` over its whole diff, and it is squashed from its own branch into the spec's branch as one commit. Once every milestone is in, the spec's branch lands on the base (see **Land the spec**). Everything stays local: never push, fetch or open a PR; the user pushes by hand.
 
-Dispatch every implementer sub-agent as the `alper-skills:implementer` agent. Talk to sub-agents through **context pointers**: the paths of the ticket, its `milestone.md` and the `spec.md`, rather than their contents.
+Dispatch every implementer sub-agent as the `alper-skills:implementer` agent, which runs on Haiku. A **fixer** is that same agent dispatched with `model: sonnet`: it takes the work an implementer got wrong or could not finish, the review's findings and a failing check. Talk to sub-agents through **context pointers**: the paths of the ticket, its `milestone.md` and the `spec.md`, rather than their contents.
 
 ## Branches
 
@@ -41,13 +41,13 @@ A build that stopped **resumes** from the Phase line of the milestone step 1 pic
 
 5. **Review.** When the milestone folder holds a `review.md` whose **Head** is the branch's `HEAD`, the milestone as it stands is already reviewed: take that report. Otherwise invoke the `review-changes` skill with the fixed point and the milestone folder; it saves its report as the milestone's `review.md`. Show the user the report. When it flags findings **escalate** that have no **Answer** line, write `ask` into the **Phase** line, then ask the user in one round, in `brainstorm`'s [round format](../brainstorm/SKILL.md#round-format), headed `Escalations`: each finding is a question whose options are fix it as proposed, fix it another way, or skip it, with your recommendation marked on each. Write each answer under its finding as `**Answer:** <answer>`. Done when every escalated finding has its Answer, or none was flagged.
 
-6. **Fix.** When `review.md` holds nothing to fix, skip this. Otherwise dispatch one implementer sub-agent with the path of `review.md` and this brief:
+6. **Fix.** When `review.md` holds nothing to fix, skip this. Otherwise dispatch one fixer with the path of `review.md` and this brief:
 
    > Fix the findings in this review: every one not flagged escalate, and each escalated one as its answer says, skipping any the branch already fixes. Verify only the findings you fix. The milestone check runs the full suite next, so finish on the unit suite and your e2e tests. Commit by invoking the `commit` skill with the spec folder.
 
    The review runs once per milestone, so fixing never turns into a review loop. Done when the fixes are committed, or there was nothing to fix.
 
-7. **Check the increment.** Run the full suite and the check in `milestone.md`'s **Done when**: this is the milestone's one full run. When either fails, dispatch an implementer sub-agent with the failure, committing by the `commit` skill with the spec folder, then run both again. After two failed fixes, write `failed` into the **Phase** line, report the failure to the user and stop. Done when both pass.
+7. **Check the increment.** Run the full suite and the check in `milestone.md`'s **Done when**: this is the milestone's one full run. When either fails, dispatch a fixer with the failure, committing by the `commit` skill with the spec folder, then run both again. After two failed fixes, write `failed` into the **Phase** line, report the failure to the user and stop. Done when both pass.
 
 8. **Squash into the spec.** Check out the spec's branch. When `git diff sdd/<spec-folder>/spec sdd/<spec-folder>/M<NNN>` is empty, an earlier build already committed the squash: take `HEAD` as its commit. Otherwise run `git merge --squash sdd/<spec-folder>/M<NNN>` and commit it by invoking the `commit` skill with the spec folder: the subject is the milestone's increment in the present tense, the body one to three bullets. Write the commit's SHA into `milestone.md`'s **Squash** line. Keep the milestone's branch: its ticket commits stay readable there until the spec lands. Done when the squash is committed and recorded.
 
@@ -59,7 +59,7 @@ When no milestone is open, the spec's branch lands on the base as one commit per
 
 1. **Check it has not landed.** Find the base branch by **Branches**. When `git merge-base --is-ancestor sdd/<spec-folder>/spec <base>` succeeds, the spec has landed: skip to step 3. Done when you know the spec has not landed.
 
-2. **Land it.** Ask the user before changing the base. When `git status --porcelain` is not empty, report it and stop. Run `git rebase <base> sdd/<spec-folder>/spec`; on a conflict, run `git rebase --abort`, report the conflicting files and stop. Run the full suite on the rebased branch. When it fails, the base's new commits broke the spec: dispatch an implementer sub-agent with the failure, committing by the `commit` skill with the spec folder, then run the suite again; after two failed fixes, report the failure and stop, leaving the base untouched. Then check out the base and run `git merge --ff-only sdd/<spec-folder>/spec`. Done when the base holds the spec's commits, or the user declined.
+2. **Land it.** Ask the user before changing the base. When `git status --porcelain` is not empty, report it and stop. Run `git rebase <base> sdd/<spec-folder>/spec`; on a conflict, run `git rebase --abort`, report the conflicting files and stop. Run the full suite on the rebased branch. When it fails, the base's new commits broke the spec: dispatch a fixer with the failure, committing by the `commit` skill with the spec folder, then run the suite again; after two failed fixes, report the failure and stop, leaving the base untouched. Then check out the base and run `git merge --ff-only sdd/<spec-folder>/spec`. Done when the base holds the spec's commits, or the user declined.
 
 3. **Record the landing.** Write `**Landed:** <SHA>` into `spec.md`, under its **Base** line, with the SHA of `git rev-parse sdd/<spec-folder>/spec`: specs that depend on this one wait for that line. Skip this when the user declined in step 2, or the line is already there. Done when `spec.md` holds the **Landed** line, or the user declined.
 
