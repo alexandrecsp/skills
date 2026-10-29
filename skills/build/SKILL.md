@@ -7,7 +7,7 @@ metadata:
   type: process
 ---
 
-Build one **milestone** per call, from the files `to-tickets` wrote under `.sdd/specs/NNN-<slug>/`. Each ticket is built by an **implementer sub-agent** in a fresh context, the milestone closes with one `review-changes` over its whole diff, and it is squashed from its own branch into the spec's branch as one commit. Once every milestone is in, the spec's branch lands on the base (see **Land the spec**). Everything stays local: never push, fetch or open a PR; the user pushes by hand.
+Build one **milestone** per call, from the files `to-tickets` wrote under `.sdd/specs/NNN-<slug>/`. Each ticket is built by an **implementer sub-agent** in a fresh context, the milestone closes with one `review-changes` over its whole diff, and it is squashed from its own branch into the spec's branch as one commit. Once every milestone is in, the spec's branch lands on the base (see [LAND.md](LAND.md)). Everything stays local: never push, fetch or open a PR; the user pushes by hand.
 
 Dispatch every implementer sub-agent as the `alper-skills:implementer` agent, which runs on Haiku. A **fixer** is that same agent dispatched with `model: sonnet`: it takes the work an implementer got wrong or could not finish, the review's findings and a failing check. Talk to sub-agents through **context pointers**: the paths of the ticket, its `milestone.md` and the `spec.md`, rather than their contents.
 
@@ -23,7 +23,7 @@ A build that stopped **resumes** from the Phase line of the milestone step 1 pic
 
 ## Process
 
-1. **Pick the milestone.** When `spec.md` has an **Abandoned** line, report it and stop. A milestone is **open** until its **Squash** names a commit. With a milestone folder, take it; when an earlier milestone is still open, report that and stop. With a spec folder, or without an argument the spec folder from this conversation, take the lowest-numbered open milestone; when none is open, follow **Land the spec** instead. Done when you can name the milestone and the step its Phase resumes at.
+1. **Pick the milestone.** When `spec.md` has an **Abandoned** line, report it and stop. A milestone is **open** until its **Squash** names a commit. With a milestone folder, take it; when an earlier milestone is still open, report that and stop. With a spec folder, or without an argument the spec folder from this conversation, take the lowest-numbered open milestone; when none is open, follow [LAND.md](LAND.md) instead. Done when you can name the milestone and the step its Phase resumes at.
 
 2. **Check the dependencies.** Skip this unless the picked milestone is the spec's first and none of its tickets has left `todo`: a later call already passed it. For each spec named in the **Depends on** line of `spec.md`, which is absent or `None` when there are none: when its folder is missing under `.sdd/specs/`, report it and stop; when its `spec.md` has an **Abandoned** line, report that this spec must be revised to drop it, and stop; when its `spec.md` has no **Landed** line, or `git merge-base --is-ancestor <its Landed SHA> <its Base>` fails, report that this spec waits on it and stop. Then dispatch one `alper-skills:reviewer` agent per dependency, in parallel, with the paths of both `spec.md` files and this brief:
 
@@ -52,15 +52,3 @@ A build that stopped **resumes** from the Phase line of the milestone step 1 pic
 8. **Squash into the spec.** Check out the spec's branch. When `git diff sdd/<spec-folder>/spec sdd/<spec-folder>/M<NNN>` is empty, an earlier build already committed the squash: take `HEAD` as its commit. Otherwise run `git merge --squash sdd/<spec-folder>/M<NNN>` and commit it by invoking the `commit` skill with the spec folder: the subject is the milestone's increment in the present tense, the body one to three bullets. Write the commit's SHA into `milestone.md`'s **Squash** line. Keep the milestone's branch: its ticket commits stay readable there until the spec lands. Done when the squash is committed and recorded.
 
 9. **Hand over.** Report the tickets built with their commits, what the review fixed, the squash commit, and the next step: run `/build <spec-folder>` again, for the next milestone or, after the last, to land the spec. Done when the user has the report.
-
-## Land the spec
-
-When no milestone is open, the spec's branch lands on the base as one commit per milestone, with no merge commit.
-
-1. **Check it has not landed.** Find the base branch by **Branches**. When `git merge-base --is-ancestor sdd/<spec-folder>/spec <base>` succeeds, the spec has landed: skip to step 3. Done when you know the spec has not landed.
-
-2. **Land it.** Ask the user before changing the base. When `git status --porcelain` is not empty, report it and stop. Run `git rebase <base> sdd/<spec-folder>/spec`; on a conflict, run `git rebase --abort`, report the conflicting files and stop. Run the full suite on the rebased branch. When it fails, the base's new commits broke the spec: dispatch a fixer with the failure, committing by the `commit` skill with the spec folder, then run the suite again; after two failed fixes, report the failure and stop, leaving the base untouched. Then check out the base and run `git merge --ff-only sdd/<spec-folder>/spec`. Done when the base holds the spec's commits, or the user declined.
-
-3. **Record the landing.** Write `**Landed:** <SHA>` into `spec.md`, under its **Base** line, with the SHA of `git rev-parse sdd/<spec-folder>/spec`: specs that depend on this one wait for that line. Skip this when the user declined in step 2, or the line is already there. Done when `spec.md` holds the **Landed** line, or the user declined.
-
-4. **Clean up and hand over.** Offer to delete the spec's branches (`git branch -D` on each of `git branch --list 'sdd/<spec-folder>/*'`); delete them when the user agrees. Report the commits now on the base, and that the spec is built. Done when the user has the report.
