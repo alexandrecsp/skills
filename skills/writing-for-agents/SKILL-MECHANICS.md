@@ -13,6 +13,8 @@ Pick model-invocation only when the agent must reach the skill on its own, or an
 
 Shared reference that two user-invoked skills both need can live in neither: with no descriptions, neither can fire the other. Push it to a plain file outside the skill system: external reference any skill can point at.
 
+Point another skill at a reference file, so the reader loads only the material it needs: a pointer into a SKILL.md loads that skill's whole process, and its steps compete with the reader's own. When another skill needs a fragment of a SKILL.md, move the fragment into a reference file beside it and point both skills there.
+
 ## Splitting by invocation
 
 The invocation cut of splitting (the sequence cut lives in `SKILL.md`): split off a model-invoked skill when you have a distinct leading word that should trigger it on its own (a trigger word you actually use in your prompts), or another skill must reach it. You pay context load for the new always-loaded description, so that independent reach has to be worth it.
