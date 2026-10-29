@@ -23,23 +23,7 @@ Most repos have a single context:
 └── src/
 ```
 
-If a `GLOSSARY-MAP.md` exists at the root, the repo has multiple contexts. The map points to where each one lives (its format is in [GLOSSARY-FORMAT.md](./GLOSSARY-FORMAT.md)):
-
-```
-/
-├── GLOSSARY-MAP.md
-├── docs/
-│   └── adr/                          ← system-wide decisions
-├── src/
-│   ├── ordering/
-│   │   ├── GLOSSARY.md
-│   │   └── docs/adr/                 ← context-specific decisions
-│   └── billing/
-│       ├── GLOSSARY.md
-│       └── docs/adr/
-```
-
-With multiple contexts, infer which one the current topic belongs to; if unclear, ask. A decision that binds one context goes in that context's `docs/adr/`; one that spans contexts goes in the root `docs/adr/`.
+If a `GLOSSARY-MAP.md` exists at the root, the repo has multiple contexts: follow [CONTEXTS.md](CONTEXTS.md).
 
 Create files lazily: only when you have something to write. If no `GLOSSARY.md` exists, create a root one when the first term is resolved. If the target `docs/adr/` doesn't exist, create it when its first ADR is needed.
 
