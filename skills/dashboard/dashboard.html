@@ -479,9 +479,9 @@ const statusIcon = (s, size = 'h-5 w-5') =>
   : `<span class="${size} shrink-0 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-600"></span>`;
 
 // /build's closing steps after the last ticket, from milestone.md's Phase line; a Squash commit ends them.
-// ask is the review waiting on the user's answers and failed a check /build gave up fixing: both wait on the user; the others run on their own.
-const PHASE_LABEL = { check: 'Checking', failed: 'Check failed', review: 'In review', ask: 'Awaiting your answers', fix: 'Fixing review', squash: 'Squashing' };
-const waitsOnUser = (m) => m.phase === 'ask' || m.phase === 'failed';
+// failed is a check /build gave up fixing: it waits on the user; the others run on their own.
+const PHASE_LABEL = { check: 'Checking', failed: 'Check failed', review: 'In review', decide: 'Deciding escalations', fix: 'Fixing review', squash: 'Squashing' };
+const waitsOnUser = (m) => m.phase === 'failed';
 const isClosing = (m) => !m.squash && PHASE_LABEL[m.phase] && m.tickets.length && m.tickets.every((t) => t.status === 'done');
 const milestoneStatus = (m) => (isClosing(m) ? (waitsOnUser(m) ? 'attention' : 'active') : specStatus(m.tickets));
 const milestoneLabel = (m) => (isClosing(m) ? PHASE_LABEL[m.phase] : STATUS[milestoneStatus(m)].label);
@@ -1175,8 +1175,8 @@ const milestoneRef = (spec, m) => ({ kind: 'milestone', spec: spec.id, id: m.id 
 const ticketRef = (spec, n) => ({ kind: 'ticket', spec: spec.id, id: n });
 // A review belongs to a milestone, or to the spec when it reviewed the whole spec.
 const reviewRef = (spec, m) => ({ kind: 'review', spec: spec.id, id: m?.id });
-// A milestone waiting on your answers opens on its review.
-const openMilestone = (spec, m) => openDoc([milestoneRef(spec, m), reviewRef(spec, m), specRef(spec)], m.phase === 'ask' && m.review ? 1 : 0);
+// A milestone deciding its escalations opens on its review.
+const openMilestone = (spec, m) => openDoc([milestoneRef(spec, m), reviewRef(spec, m), specRef(spec)], m.phase === 'decide' && m.review ? 1 : 0);
 
 function resolve(ref) {
   const spec = state.specs.find((s) => s.id === ref.spec);

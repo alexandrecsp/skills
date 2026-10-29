@@ -1,7 +1,7 @@
 ---
 name: commit
 description: Commit changes with a keyed message in the present tense. Use when committing work.
-argument-hint: "[spec-folder]"
+argument-hint: "[spec-id]"
 metadata:
   type: process
 ---
@@ -21,7 +21,7 @@ A commit message describes the project's **new state**: its title completes the 
 
 ## Process
 
-1. **Find the key.** With a `[spec-folder]` argument, or a spec folder this conversation works in, read the **Key** line of its `spec.md`; `None` means no key. Otherwise, when `.sdd/settings.json` holds a `null` `commitKeyPattern`, there is no key; else ask the user for one, or none. A key must fully match `commitKeyPattern` when one is set; when it does not, ask the user for one that does. Done when you hold a key or know there is none.
+1. **Find the key.** With a `[spec-id]` argument, found by [SPEC-ID.md](../to-spec/SPEC-ID.md), or a spec folder this conversation works in, read the **Key** line of its `spec.md`; `None` means no key. Otherwise, when `.sdd/settings.json` holds a `null` `commitKeyPattern`, there is no key; else ask the user for one, or none. A key must fully match `commitKeyPattern` when one is set; when it does not, ask the user for one that does. Done when you hold a key or know there is none.
 
 2. **Stage.** Commit what is staged. When nothing is staged, stage every change the current task made, path by path. Done when `git diff --staged` holds exactly the task's changes.
 

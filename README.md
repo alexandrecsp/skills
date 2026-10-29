@@ -22,11 +22,11 @@ The skills then show up as `/alper-skills:<name>`. Below they are written by the
         │
 /to-tickets  ──────────────  milestones/NNN-<milestone>/ with tickets
         │
-/build  (once per milestone) ┐
+/build  (once per milestone, or all of them with auto) ┐
    ├─ branch sdd/<spec>/M<NNN> from sdd/<spec>/spec
    ├─ per ticket: sub-agent → tdd → commit
    ├─ check the milestone's "Done when"
-   ├─ review-changes → fix
+   ├─ review-changes → arbiter decides escalations → fix
    └─ squash it into sdd/<spec>/spec ┘
         │
 /build  (once every milestone is in)
@@ -73,7 +73,7 @@ It also asks for the spec's commit key. The spec covers the problem, solution, u
 
 When another **in-flight** spec (one not landed yet) changes the same modules, the new spec **depends on** it: it is designed against that spec's planned state, lists what it assumes under **Relies On**, and `/build` waits until the dependency lands and those assumptions still hold. A spec that will never be built carries an `**Abandoned:** <reason>` line: it stops counting as in-flight, `/build` refuses it, and the dashboard greys it out. The agent writes that line when you tell it an overlapping spec is dead, or you can add it by hand.
 
-### 3. `/to-tickets [spec-folder]`
+### 3. `/to-tickets [spec-id]`
 
 Breaks the spec into ordered **milestones**, and each milestone into **tickets**:
 
@@ -89,21 +89,21 @@ You review the breakdown (boundaries, granularity, dependencies) until you appro
     └── NNN-<milestone-slug>/
         ├── milestone.md        ← Delivers, Done when, Phase, Squash: <sha>
         ├── NNN-<ticket-slug>.md   ← Status: todo | doing | blocked | done, Commit: <sha>, Depends on, Notes
-        └── review.md           ← written by review-changes: the findings, and your answers to escalations
+        └── review.md           ← written by review-changes: the findings, and the arbiter's answers to escalations
 ```
 
-### 4. `/build [spec-or-milestone-folder]`
+### 4. `/build [spec-id] [auto]`
 
-Builds **one milestone per run**:
+A **spec id** is the spec folder's number (`3`), name or path. `/build` builds **one milestone per run**, or with `auto` every milestone and then the landing:
 
 1. It picks the earliest milestone not yet squashed, and resumes it from its **Phase** line when an earlier build stopped partway.
 2. It checks out the milestone's own branch, `sdd/<spec-folder>/M<NNN>`, created from the spec's branch, `sdd/<spec-folder>/spec`. The first milestone creates the spec's branch from the base branch and records the base in `spec.md`. The working tree must be clean.
 3. For each ticket, in order, it starts a fresh **implementer sub-agent**. That sub-agent reads the ticket, the milestone, the spec, and the notes and commits of earlier tickets. It builds the ticket with `tdd` (red, then green, at the ticket's seams) and commits with `commit`. Then it marks the ticket `done` with its SHA and leaves notes for the next ticket.
-4. It runs `review-changes` over the milestone's whole diff, from the branch's merge-base with the base, which saves its report as the milestone's `review.md`. Every finding is fixed automatically in one pass by a **fixer**, the implementer dispatched on Sonnet rather than Haiku, with no second review. It stops to ask you only about findings flagged **escalate**: fixes that would contradict an ADR, change a public interface or a named seam, or need the spec itself changed.
+4. It runs `review-changes` over the milestone's whole diff, from the branch's merge-base with the base, which saves its report as the milestone's `review.md`. Every finding is fixed automatically in one pass by a **fixer**, the implementer dispatched on Sonnet rather than Haiku, with no second review. Findings flagged **escalate** (fixes that would contradict an ADR, change an interface that code outside the diff already calls, or need the spec itself changed) go first to an **arbiter** sub-agent on Opus, which decides each one without asking you. A decision that departs from the spec is noted in the tickets it touches, and `spec.md` stays as you approved it. The hand-over lists every decision under **Decided for you**, so you can revert any of them.
 5. It runs the full suite and the milestone's **Done when** check, once, after the fixes.
 6. It squashes the milestone's branch into the spec's branch as one commit, recording its SHA in `milestone.md`.
 
-Run `/build` again for the next milestone. Once every milestone is in, `/build` asks before landing the spec: it rebases the spec's branch onto the base, runs the full suite (fixing it, in up to two tries, when the base's new commits broke it), and fast-forwards the base. Everything stays local: nothing is pushed and no PR is opened, so push by hand when you want to. Because progress lives in the ticket files, the **Phase** line and `review.md`, a build that stops picks up where it left off.
+Run `/build` again for the next milestone, or `/build <spec-id> auto` to build every remaining milestone and land the spec in one run: it reports one line per milestone and the full report at the end, and stops only where a single run would (a blocked ticket, a check it can't fix, the question before landing). Once every milestone is in, `/build` asks before landing the spec: it rebases the spec's branch onto the base, runs the full suite (fixing it, in up to two tries, when the base's new commits broke it), and fast-forwards the base. Everything stays local: nothing is pushed and no PR is opened, so push by hand when you want to. Because progress lives in the ticket files, the **Phase** line and `review.md`, a build that stops picks up where it left off.
 
 #### Branches and merging
 

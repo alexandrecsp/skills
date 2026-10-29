@@ -1,7 +1,7 @@
 ---
 name: to-tickets
 description: Break a spec, a plan, or the current conversation into milestones of tracer-bullet tickets, saved in the spec's folder under .sdd/specs/.
-argument-hint: "[spec-folder]"
+argument-hint: "[spec-id]"
 disable-model-invocation: true
 metadata:
   type: process
@@ -13,7 +13,7 @@ This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setu
 
 ## Process
 
-1. **Gather context.** With a `[spec-folder]` argument, read its `spec.md`; without one, use the spec written in this conversation or, failing that, the conversation itself (then each behaviour discussed stands in for a user story, and you propose the seams for the user to confirm in step 4). When the spec folder already holds a `milestones/` folder, report that and stop, unless the user asked for a rewrite. Read the code the work touches, plus the [domain docs](../domain-modeling/DOMAIN-DOCS.md). Look for **prefactoring**: a change that makes the later tickets easy. When the spec's Further Notes leave a question open that a ticket would build on, ask the user to settle it, and write the answer into Further Notes. Without a spec, follow [IN-FLIGHT.md](../to-spec/IN-FLIGHT.md) for the modules the work changes, unless the conversation already ran it; when it reports an overlapping spec, recommend `/to-spec`, which records the dependency, and stop. Done when you can name the modules the work changes, and no open question a ticket builds on is left.
+1. **Gather context.** With a `[spec-id]` argument, find its spec folder by [SPEC-ID.md](../to-spec/SPEC-ID.md) and read its `spec.md`; without one, use the spec written in this conversation or, failing that, the conversation itself (then each behaviour discussed stands in for a user story, and you propose the seams for the user to confirm in step 4). When the spec folder already holds a `milestones/` folder, report that and stop, unless the user asked for a rewrite. Read the code the work touches, plus the [domain docs](../domain-modeling/DOMAIN-DOCS.md). Look for **prefactoring**: a change that makes the later tickets easy. When the spec's Further Notes leave a question open that a ticket would build on, ask the user to settle it, and write the answer into Further Notes. Without a spec, follow [IN-FLIGHT.md](../to-spec/IN-FLIGHT.md) for the modules the work changes, unless the conversation already ran it; when it reports an overlapping spec, recommend `/to-spec`, which records the dependency, and stop. Done when you can name the modules the work changes, and no open question a ticket builds on is left.
 
 2. **Cut milestones.** Number them `001` upwards, in order. Each delivers one increment you can verify with a check the builder can run, and builds only on earlier milestones. Prefactoring goes in the first milestone. Done when every user story belongs to exactly one milestone.
 
@@ -48,4 +48,4 @@ This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setu
            └── NNN-<ticket-slug>.md   ← one per ticket
    ```
 
-   Done when every milestone folder has its `milestone.md` and at least one ticket, and the user has the spec folder's path and the next step, `/build <spec-folder>`.
+   Done when every milestone folder has its `milestone.md` and at least one ticket, and the user has the spec folder's path and the next step, `/build <spec-id>`, or `/build <spec-id> auto` to build every milestone in one run.

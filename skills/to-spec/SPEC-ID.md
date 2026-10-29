@@ -1,0 +1,1 @@
+A **spec id** names one spec folder under `.sdd/specs/`: its number (`3` or `003`), its folder name (`003-invoice-export`) or its path. Resolve it by the number it starts with, or that its last path segment starts with: the spec folder is the one whose name starts with that number padded to three digits. When no folder or more than one matches, report it and stop.
