@@ -153,8 +153,9 @@ Every pipeline branch starts with `sdd/`, so `git branch --list 'sdd/*'` finds t
 | `prototype` | Builds a throwaway prototype that answers one design question: a shareable HTML demo for logic, or switchable variants for UI. Keeps it on a `prototype/<slug>` branch and records the verdict. |
 | `dashboard` | Opens the spec dashboard: one page in Chrome or Edge listing every repo you add to it, with needs-attention repos first. Each repo opens into its specs, milestones, tickets and reviews, with their diagrams drawn, live while you view it. Nothing is installed: the page opens from the plugin's folder. |
 | `improve-and-refactor` | Scans hot spots for deepening and smell refactors, shows them as an HTML report saved to `.sdd/refactors/`, and brainstorms the one you pick. A contained refactor goes straight to `/to-tickets` and `/build`; a larger one starts at `/to-spec`. |
+| `onboard` | Explores the whole codebase, one scout per area in parallel, then traces the two or three journeys that cross the most areas. Writes an onboarding tour for a newcomer to `.sdd/tours/`: a context map, the journeys, a card per area, where things live, the vocabulary and the commands. Then offers to record the terms and decisions it found undocumented. |
 
-The pipeline skills (`setup-repository`, `brainstorm-with-docs`, `to-spec`, `to-tickets`, `build`), `dashboard`, `improve-and-refactor` and `pr` only run when you type their command. The others can also be invoked by the agent when it needs them.
+The pipeline skills (`setup-repository`, `brainstorm-with-docs`, `to-spec`, `to-tickets`, `build`), `dashboard`, `improve-and-refactor`, `onboard` and `pr` only run when you type their command. The others can also be invoked by the agent when it needs them.
 
 ## Repository layout
 

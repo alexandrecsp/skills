@@ -1,6 +1,6 @@
 ---
 name: scout
-description: Finds the facts its brief asks for in a codebase, its docs or its spec files, and reports them. Dispatched by brainstorm and IN-FLIGHT.
+description: Finds the facts its brief asks for in a codebase, its docs or its spec files, and reports them. Dispatched by brainstorm, IN-FLIGHT and onboard.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
