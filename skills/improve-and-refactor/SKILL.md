@@ -44,7 +44,7 @@ This needs `.sdd/settings.json`; when it is missing, tell the user to run `/setu
    - **One seam**: the existing tests at one confirmed seam pin the behaviour, or one new test there would.
    - **Local blast radius**: only callers inside the refactored area change; none elsewhere has to move in the same change.
    - **No ADR reopened**: the candidate carried no ADR callout.
-   - **One fresh context**: a single implementer sub-agent could build it, with no earlier ticket to build on.
+   - **One fresh context**: a single builder sub-agent could build it, with no earlier ticket to build on.
 
    When all four hold, the refactor is **contained**; otherwise it is **staged**. Done when you can name the size and the test that decided it.
 

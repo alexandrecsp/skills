@@ -7,11 +7,11 @@ metadata:
   type: process
 ---
 
-Build a spec one **milestone** at a time, from the files `to-tickets` wrote under `.sdd/specs/NNN-<slug>/`. Each ticket is built by an **implementer sub-agent** in a fresh context, the milestone closes with one `review-changes` over its whole diff, and it is squashed from its own branch into the spec's branch as one commit. Once every milestone is in, the spec's branch lands on the base (see [LAND.md](LAND.md)). Everything stays local: never push, fetch or open a PR; the user pushes by hand.
+Build a spec one **milestone** at a time, from the files `to-tickets` wrote under `.sdd/specs/NNN-<slug>/`. Each ticket is built by an **builder sub-agent** in a fresh context, the milestone closes with one `review-changes` over its whole diff, and it is squashed from its own branch into the spec's branch as one commit. Once every milestone is in, the spec's branch lands on the base (see [LAND.md](LAND.md)). Everything stays local: never push, fetch or open a PR; the user pushes by hand.
 
 In **auto mode**, a trailing `auto` argument, one call builds the whole spec: step 10 returns to step 1 for the next milestone, and once none is open, step 1 lands the spec by [LAND.md](LAND.md). It stops only where a single-milestone call stops, and running the same call again resumes it.
 
-Dispatch every implementer sub-agent as the `alper-skills:implementer` agent, which runs on Haiku. A **fixer** is that same agent dispatched with `model: sonnet`: it takes the work an implementer got wrong or could not finish, the review's findings and a failing check. The review's escalated findings go to the `alper-skills:arbiter` agent, which runs on Opus and decides them in place of the user. Talk to sub-agents through **context pointers**: the paths of the ticket, its `milestone.md` and the `spec.md`, rather than their contents.
+Dispatch every builder sub-agent as the `alper-skills:builder` agent, which runs on Haiku. A **fixer** is that same agent dispatched with `model: sonnet`: it takes the work a builder got wrong or could not finish, the review's findings and a failing check. The review's escalated findings go to the `alper-skills:arbiter` agent, which runs on Opus and decides them in place of the user. Talk to sub-agents through **context pointers**: the paths of the ticket, its `milestone.md` and the `spec.md`, rather than their contents.
 
 ## Branches
 
@@ -35,7 +35,7 @@ A build that stopped **resumes** from the Phase line of the milestone step 1 pic
 
 3. **Prepare the branches.** When `git status --porcelain` is not empty, report it and stop: the commits must hold only this milestone's work. Find the base branch by **Branches**. When the spec's branch does not exist, create it from the base. When the milestone's branch exists, check it out; otherwise create it from the spec's branch. The **fixed point**, the commit the review diffs against, is `git merge-base sdd/<spec-folder>/spec HEAD`, which survives rebases. Done when the milestone's branch is checked out and the fixed point resolves.
 
-4. **Build the tickets.** Take the tickets that are not `done` in number order: each builds only on the tickets before it. For each, set its **Status** to `doing`, then dispatch one implementer sub-agent, in the foreground, with the paths of the ticket, `milestone.md` and `spec.md`, and this brief:
+4. **Build the tickets.** Take the tickets that are not `done` in number order: each builds only on the tickets before it. For each, set its **Status** to `doing`, then dispatch one builder sub-agent, in the foreground, with the paths of the ticket, `milestone.md` and `spec.md`, and this brief:
 
    > Build this ticket. First read the earlier tickets in its milestone folder and the tickets its **Depends on** names, their Notes, and the commits their **Commit** lines name. Invoke the `tdd` skill, testing at the seams the ticket's acceptance criteria name. Build its Design patterns rows at their Where. The milestone check runs the full suite after the review's fixes, so finish on the unit suite and your e2e tests. Then fill the ticket's Notes with what its diff can't show the next ticket (decisions the ticket left open, departures from it, gotchas you hit) in a few bullets, or "None". Commit everything by invoking the `commit` skill with the spec folder. Then write the commit's SHA into the ticket's **Commit** line and set its **Status** to `done`. Report the commit, and anything you could not build.
 
