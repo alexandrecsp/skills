@@ -11,9 +11,19 @@ A variant is judged best **in situ**: against the app's real header, sidebar, da
 
 ## Process
 
-1. **State the question and the plan.** Default to 3 variants, at most 5: past that they stop being structurally different. Write the plan in one line as a top-of-file comment, such as "Three variants of the settings page, switched by `?variant=`, on the existing `/settings` route." Done when the plan names the host page and the number of variants.
+1. **State the question and the plan.** Default to 3 variants, at most 5: past that they stop being structurally different. Give each variant a **structural constraint** the others don't share: a layout, information hierarchy or primary affordance ("sidebar-led", "one scrolling column", "table first, no cards"). Write the plan in one line as a top-of-file comment, such as "Three variants of the settings page (sidebar-led, one column, table first), switched by `?variant=`, on the existing `/settings` route." Done when the plan names the host page and each variant's constraint.
 
-2. **Draft the variants.** Each uses the page's purpose and data, the project's component library and styling, and an exported name (`VariantA`, `VariantB`). Variants differ in **structure**: layout, information hierarchy, primary affordance. Colour and copy alone make a tweak, not a variant. Each variant owns its layout, sharing at most small pieces such as a header. Variants stay read-only; one that needs a mutation calls a stub. Done when no two variants share a layout; redraft one with an explicit constraint ("no card grid") when two come out alike.
+2. **Draft the variants.** Spawn one `alper-skills:designer` agent per variant, in parallel. A separate context per variant keeps each one from drifting toward the others' layouts. Each brief carries:
+
+   - the question, and the host page: its route, its data and props, and the files around it
+   - the project's component library and styling, by file path
+   - the variant's file path, and its exported name (`VariantA`, `VariantB`)
+   - the variant's structural constraint from step 1
+   - the variant rules below, and the rules for both branches from [SKILL.md](SKILL.md), pasted in
+
+   The variant rules: variants differ in **structure**: layout, information hierarchy, primary affordance. Colour and copy alone make a tweak, not a variant. Each variant owns its layout, sharing at most small pieces such as a header. Variants stay read-only; one that needs a mutation calls a stub.
+
+   Each designer returns its variant's short name for the floating bar (`Sidebar layout`) and one line on its structure. Done when every designer has returned and no two variants share a layout; redispatch one with a sharper constraint ("no card grid") when two come out alike.
 
 3. **Wire the switcher.** One switcher on the route reads the param and renders the variant:
 
