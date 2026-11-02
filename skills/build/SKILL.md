@@ -1,7 +1,7 @@
 ---
 name: build
-description: Build the next milestone of a spec under .sdd/specs/, or with auto every milestone and the landing, each ticket test-first in its own sub-agent, then one review of each milestone's changes.
-argument-hint: "[spec-id] [auto]"
+description: Build every milestone of a spec under .sdd/specs/ and land it, or with a milestone id just that milestone, each ticket test-first in its own sub-agent, then one review of each milestone's changes.
+argument-hint: "[spec-id] [milestone-id]"
 disable-model-invocation: true
 metadata:
   type: process
@@ -9,7 +9,7 @@ metadata:
 
 Build a spec one **milestone** at a time, from the files `to-tickets` wrote under `.sdd/specs/NNN-<slug>/`. Each ticket is built by an **builder sub-agent** in a fresh context, the milestone closes with one `review-changes` over its whole diff, and it is squashed from its own branch into the spec's branch as one commit. Once every milestone is in, the spec's branch lands on the base (see [LAND.md](LAND.md)). Everything stays local: never push, fetch or open a PR; the user pushes by hand.
 
-In **auto mode**, a trailing `auto` argument, one call builds the whole spec: step 10 returns to step 1 for the next milestone, and once none is open, step 1 lands the spec by [LAND.md](LAND.md). It stops only where a single-milestone call stops, and running the same call again resumes it.
+By default one call builds the whole spec: step 10 returns to step 1 for the next milestone, and once none is open, step 1 lands the spec by [LAND.md](LAND.md). Given a **milestone id** (the milestone folder's number, with or without an `m`, such as `m01`, `M001` or `1`, or its folder name), the call runs in **milestone mode**: it builds that one milestone and hands over at step 10. The milestone id comes after the spec id, or alone when it starts with `m`, for the spec in this conversation. A call stops early only where a step says to stop, and running the same call again resumes it.
 
 Dispatch every builder sub-agent as the `alper-skills:builder` agent, which runs on Haiku. A **fixer** is that same agent dispatched with `model: sonnet`: it takes the work a builder got wrong or could not finish, the review's findings and a failing check. The review's escalated findings go to the `alper-skills:arbiter` agent, which runs on Opus and decides them in place of the user. Talk to sub-agents through **context pointers**: the paths of the ticket, its `milestone.md` and the `spec.md`, rather than their contents.
 
@@ -25,7 +25,7 @@ A build that stopped **resumes** from the Phase line of the milestone step 1 pic
 
 ## Process
 
-1. **Pick the milestone.** Find the spec folder from the spec id by [SPEC-ID.md](../to-spec/SPEC-ID.md), or, without one, take the spec folder from this conversation. When `spec.md` has an **Abandoned** line, report it and stop. A milestone is **open** until its **Squash** names a commit. Take the lowest-numbered open milestone; when none is open, follow [LAND.md](LAND.md) instead. Done when you can name the milestone and the step its Phase resumes at.
+1. **Pick the milestone.** Find the spec folder from the spec id by [SPEC-ID.md](../to-spec/SPEC-ID.md), or, without one, take the spec folder from this conversation. When `spec.md` has an **Abandoned** line, report it and stop. A milestone is **open** until its **Squash** names a commit. In milestone mode, take the folder under `milestones/` whose name starts with the milestone id's number padded to three digits; when none matches, or it is not open, report that and stop; when a lower-numbered milestone is open, report that it comes first and stop: each milestone branches from the squashes before it. Otherwise take the lowest-numbered open milestone; when none is open, follow [LAND.md](LAND.md) instead. Done when you can name the milestone and the step its Phase resumes at.
 
 2. **Check the dependencies.** Skip this unless the picked milestone is the spec's first and none of its tickets has left `todo`: otherwise an earlier pass already ran it. For each spec named in the **Depends on** line of `spec.md`, which is absent or `None` when there are none: when its folder is missing under `.sdd/specs/`, report it and stop; when its `spec.md` has an **Abandoned** line, report that this spec must be revised to drop it, and stop; when its `spec.md` has no **Landed** line, or `git merge-base --is-ancestor <its Landed SHA> <its Base>` fails, report that this spec waits on it and stop. Then dispatch one `alper-skills:reviewer` agent per dependency, in parallel, with the paths of both `spec.md` files and this brief:
 
@@ -59,4 +59,4 @@ A build that stopped **resumes** from the Phase line of the milestone step 1 pic
 
 9. **Squash into the spec.** Check out the spec's branch. When `git diff sdd/<spec-folder>/spec sdd/<spec-folder>/M<NNN>` is empty, an earlier build already committed the squash: take `HEAD` as its commit. Otherwise run `git merge --squash sdd/<spec-folder>/M<NNN>` and commit it by invoking the `commit` skill with the spec folder: the subject is the milestone's increment in the present tense, the body one to three bullets. Write the commit's SHA into `milestone.md`'s **Squash** line. Keep the milestone's branch: its ticket commits stay readable there until the spec lands. Done when the squash is committed and recorded.
 
-10. **Hand over.** In auto mode, report one line (the milestone, its squash commit and the number of findings fixed) and return to step 1. Otherwise report the tickets built with their commits, what the review fixed, the squash commit, a **Decided for you** section listing each escalated finding in `review.md` with its Answer, or none, and the next step: run `/build <spec-id>` again, for the next milestone or, after the last, to land the spec; add `auto` to build the rest in one run. Done when the user has the report, or in auto mode the line.
+10. **Hand over.** In milestone mode, report the tickets built with their commits, what the review fixed, the squash commit, a **Decided for you** section listing each escalated finding in `review.md` with its Answer, or none, and the next step: `/build <spec-id>` to build the rest and land the spec, or `/build <spec-id> <milestone-id>` with the next milestone's id to build only that one. Otherwise report one line (the milestone, its squash commit and the number of findings fixed) and return to step 1. Done when the user has the report, or outside milestone mode the line.
