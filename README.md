@@ -37,7 +37,7 @@ Each stage writes files the next one reads, and each ends by telling you the nex
 
 ### 0. `/setup-repository`
 
-Prepares the repo. It creates `.sdd/`, which holds everything the pipeline shares and is kept out of git, through `.gitignore` or, when that file can't change, `.git/info/exclude`:
+Prepares the repo. It creates `.sdd/`, which holds everything the pipeline shares and is kept out of git locally, through `.git/info/exclude`:
 
 ```
 .sdd/
