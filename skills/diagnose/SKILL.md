@@ -86,5 +86,6 @@ Done when the step 1 loop is green, and the regression test is green or the miss
 2. Run the full suite.
 3. Commit with the `commit` skill, its details naming the hypothesis that proved right, so the next debugger learns from it.
 4. Report to the user: the root cause, the fix, the regression test or the missing seam, and the commit SHA. When the seam was missing, offer `/improve-and-refactor` to deepen the module so the bug can be locked down.
+5. When the repo is registered in a second brain ([FORMAT.md](../brain/FORMAT.md)), invoke the `brain` skill to record the root cause as a `gotcha`: the trap and how it showed, **Why** it happens, and **How to apply** it when changing that code next.
 
-Done when the tag grep is empty, the suite passes, the commit exists, and the user has the report.
+Done when the tag grep is empty, the suite passes, the commit exists, the user has the report, and the user has confirmed or declined the gotcha, or the repo has no brain.

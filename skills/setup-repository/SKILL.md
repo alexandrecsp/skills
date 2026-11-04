@@ -43,4 +43,4 @@ It also settles the repo's layout in `docs/STRUCTURE.md`, and points the repo's 
 
    Done when the chosen file holds the section once, with step 6's commands.
 
-8. **Hand over.** Report what you created, changed or deleted, including the files to commit (`docs/STRUCTURE.md` and the agent file), how to see this repo on the dashboard (run `/dashboard`, then **Add repo** and pick this repo's root, when it is not listed yet), and the next step: brainstorm a feature, then `/to-spec`. Done when the user has the report.
+8. **Hand over.** Report what you created, changed or deleted, including the files to commit (`docs/STRUCTURE.md` and the agent file), how to see this repo on the dashboard (run `/dashboard`, then **Add repo** and pick this repo's root, when it is not listed yet), how to share notes on it with the team (`/brain setup`, when it is not registered in a second brain yet), and the next step: brainstorm a feature, then `/to-spec`. Done when the user has the report.

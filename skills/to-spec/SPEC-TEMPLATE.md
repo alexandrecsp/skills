@@ -7,6 +7,8 @@ Replace each section's guidance with its content. The first four sections are th
 
 **Depends on:** <the folder names of the specs this one is built after, such as `003-invoice-export, 005-tax-rules`, or "None">
 
+**Brain notes:** <the absolute paths of the second-brain notes this spec relies on, or "None">
+
 ## Problem Statement
 
 The problem the user is facing, from the user's perspective.
@@ -37,7 +39,7 @@ Open with the **module map**, by [DIAGRAMS.md](DIAGRAMS.md). Then the implementa
 - Technical clarifications from the developer
 - Architectural decisions
 - Schema changes
-- API contracts
+- API contracts, naming every other repository that consumes them
 - Specific interactions
 
 Describe modules and interfaces by name and behaviour; file paths and code snippets go stale.

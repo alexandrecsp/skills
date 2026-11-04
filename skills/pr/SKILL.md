@@ -57,9 +57,9 @@ Each item pairs a **before** with an **after** for one behaviour the PR claims. 
 
 ## Merge Danger
 
-The **door** is two-way when reverting the merge undoes it, one-way when it does not: destructive data changes and schema migrations, a removed or changed interface that others consume, anything that leaves the system (emails sent, webhooks fired, packages published), and any decision an ADR records as hard to reverse. A change behind a flag stays two-way only until the first write in the new shape lands. When the repo's agent docs list changes it treats as one-way, their list wins. The agent that wrote the change is grading it, so a close call is one-way, with the reason stated.
+The **door** is two-way when reverting the merge undoes it, one-way when it does not: destructive data changes and schema migrations, a removed or changed interface that others consume (another repository a second-brain contract names among them), anything that leaves the system (emails sent, webhooks fired, packages published), and any decision an ADR records as hard to reverse. A change behind a flag stays two-way only until the first write in the new shape lands. When the repo's agent docs list changes it treats as one-way, their list wins. The agent that wrote the change is grading it, so a close call is one-way, with the reason stated.
 
-The **blast radius** names each thing that breaks if the change is wrong, by the module or user that feels it: consumers of a changed interface, data already stored, layout shift, mobile, performance.
+The **blast radius** names each thing that breaks if the change is wrong, by the module or user that feels it: consumers of a changed interface (in other repositories too), data already stored, layout shift, mobile, performance.
 
 ## Process
 

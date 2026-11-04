@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Second Brain</title>
+<script src="https://cdn.tailwindcss.com/3.4.16?plugins=typography"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<style>
+  :root { --surface: #ffffff; --glyph: #71717a; --edge: #a1a1aa; --member: #d4d4d8; --label: #52525b; --accent: #10b981; }
+  @media (prefers-color-scheme: dark) {
+    :root { --surface: #09090b; --glyph: #a1a1aa; --edge: #71717a; --member: #3f3f46; --label: #a1a1aa; --accent: #10b981; }
+  }
+  .dots { background-image: radial-gradient(rgb(161 161 170 / .12) 1px, transparent 1px); background-size: 18px 18px; }
+  #graph { cursor: grab; }
+  #graph:active { cursor: grabbing; }
+  .edge { stroke: var(--edge); stroke-width: 1.25; stroke-opacity: .55; transition: opacity .15s, stroke .15s; }
+  .edge.member { stroke: var(--member); stroke-dasharray: 3 3; stroke-opacity: 1; }
+  .edge.hot { stroke: var(--accent); stroke-opacity: 1; stroke-width: 2; }
+  .node { cursor: pointer; transition: opacity .15s; }
+  .node .glyph { fill: var(--surface); stroke: var(--glyph); stroke-width: 1.75; }
+  .node.ghost .glyph { stroke-dasharray: 3 2; stroke-opacity: .7; }
+  .node.repo .glyph { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+  .node.match .glyph, .node.selected .glyph { stroke: var(--accent); stroke-width: 3; }
+  .node.repo.selected .glyph { stroke: var(--glyph); }
+  .node text { fill: var(--label); font-size: 10px; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+  .node.repo text { fill: currentColor; font-size: 12px; font-weight: 600; }
+  .dim .node:not(.hot), .dim .edge:not(.hot) { opacity: .12; }
+  .far .note-label { display: none; }
+  #drawer aside { transform: translateX(100%); transition: transform .28s cubic-bezier(.2, .8, .2, 1); }
+  #drawer.open aside { transform: none; }
+  #doc .wikilink { text-decoration: none; border-bottom: 1px solid currentColor; }
+  #doc .wikilink.ghost { border-bottom-style: dashed; opacity: .7; }
+  @supports not selector(::-webkit-scrollbar) { * { scrollbar-width: thin; scrollbar-color: rgb(161 161 170 / .4) transparent; } }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgb(161 161 170 / .35); border-radius: 9999px; border: 2px solid transparent; background-clip: content-box; }
+</style>
+</head>
+<body class="flex h-screen flex-col bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased">
+
+<header class="z-20 shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur">
+  <div class="px-4 h-14 flex items-center gap-3">
+    <span class="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
+      <span class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-emerald-400 to-sky-500 text-xs font-bold text-white shadow-sm">B</span>Brain
+    </span>
+    <span id="crumb" class="truncate text-sm text-zinc-600 dark:text-zinc-300"></span>
+    <nav id="views" class="hidden ml-2 inline-flex rounded-md border border-zinc-200 dark:border-zinc-800 p-0.5 text-sm">
+      <button data-view="graph" class="px-3 py-1 rounded">Graph</button>
+      <button data-view="list" class="px-3 py-1 rounded">List</button>
+    </nav>
+    <div class="ml-auto flex items-center gap-2 text-sm">
+      <span id="live" class="hidden items-center gap-1.5 text-xs text-zinc-500" title="Watching the brain for changes"><span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>Live</span>
+      <button id="open" class="rounded-md bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-3 py-1 hover:opacity-90">Open brain</button>
+    </div>
+  </div>
+  <div id="toolbar" class="hidden flex flex-wrap items-center gap-2 border-t border-zinc-200 dark:border-zinc-800 px-4 py-2 text-sm">
+    <input id="q" type="search" placeholder="Search notes" class="w-56 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1 outline-none focus:border-emerald-500">
+    <select id="repo" class="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2 py-1" title="Show one repository's notes and their neighbours"></select>
+    <div id="types" class="flex flex-wrap gap-1" aria-label="Note types"></div>
+    <div id="stats" class="ml-auto font-mono text-xs text-zinc-500"></div>
+  </div>
+  <div id="warn" class="hidden border-t border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40 px-4 py-1.5 text-xs"></div>
+</header>
+
+<main class="relative min-h-0 flex-1">
+  <div id="empty" class="hidden h-full overflow-y-auto"></div>
+  <div id="canvas" class="dots hidden absolute inset-0"></div>
+  <div id="list" class="hidden h-full overflow-y-auto px-4 py-6"></div>
+</main>
+
+<div id="tip" class="pointer-events-none fixed z-40 hidden max-w-xs rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-3 py-2 text-xs shadow-lg backdrop-blur"></div>
+
+<div id="drawer" class="pointer-events-none fixed inset-x-0 bottom-0 top-14 z-30 overflow-hidden">
+  <aside class="pointer-events-auto absolute inset-y-0 right-0 flex w-full max-w-xl flex-col overflow-hidden border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl sm:rounded-tl-2xl">
+    <div class="h-1 shrink-0 bg-gradient-to-r from-emerald-400 to-sky-500"></div>
+    <header class="shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900/60 dark:to-zinc-950 px-6 py-5">
+      <div class="flex items-start gap-3">
+        <div id="docHead" class="min-w-0 flex-1"></div>
+        <button id="close" class="-mr-2 -mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" title="Close (Esc)" aria-label="Close"><svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+      </div>
+    </header>
+    <div class="flex-1 overflow-y-auto">
+      <article id="doc" class="prose prose-zinc dark:prose-invert max-w-none px-6 py-6 prose-headings:tracking-tight prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-code:rounded prose-code:bg-zinc-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-normal prose-code:before:content-none prose-code:after:content-none dark:prose-code:bg-zinc-800 prose-pre:rounded-xl prose-table:text-sm prose-th:text-left"></article>
+    </div>
+    <footer class="flex shrink-0 items-center gap-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 px-6 py-2.5 text-xs text-zinc-500">
+      <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 1.5h5.5L13 5v9.5H4z"/><path d="M9.5 1.5V5H13"/></svg>
+      <span id="docPath" class="min-w-0 flex-1 truncate font-mono"></span>
+      <button id="copyPath" class="shrink-0 rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 hover:border-zinc-400 hover:text-zinc-900 dark:hover:border-zinc-500 dark:hover:text-zinc-100">Copy path</button>
+    </footer>
+  </aside>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k) { try { return localStorage.getItem('brain:' + k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem('brain:' + k, v); } catch {} },
+};
+
+// A note's type is drawn as its shape, never its colour: five hues cannot stay apart on a scatter of nodes.
+const SHAPES = { concept: d3.symbolCircle, decision: d3.symbolSquare, gotcha: d3.symbolTriangle, contract: d3.symbolDiamond, 'how-to': d3.symbolStar, other: d3.symbolCross };
+const glyph = (type, size = 150) => d3.symbol().type(SHAPES[type] || SHAPES.other).size(size)();
+const icon = (type) => `<svg class="h-3.5 w-3.5" viewBox="-8 -8 16 16"><path d="${glyph(type, 70)}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
+
+// [[name]], [[name#heading]] and [[name|alias]], as Obsidian writes them.
+const WIKI = /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/g;
+
+const hidden = (() => { try { return new Set(JSON.parse(store.get('hidden') || '[]')); } catch { return new Set(); } })();
+// status: 'unsupported', 'none' (no folder picked), 'ok', 'denied' (read permission not granted) or 'missing' (no BRAIN.md at the folder's root).
+const state = { handle: null, status: 'none', files: new Map(), dirs: [], brain: null, view: store.get('view') || 'graph', repo: store.get('repo') || 'all', hidden, query: '', open: null };
+
+// ---------- folder access ----------
+
+function idb(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open('alper-brain', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('kv');
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const tx = open.result.transaction('kv', mode);
+      const req = fn(tx.objectStore('kv'));
+      tx.oncomplete = () => resolve(req.result);
+      tx.onerror = () => reject(tx.error);
+    };
+  });
+}
+
+async function walk(dir, prefix, out) {
+  for await (const [name, h] of dir.entries()) {
+    if (h.kind === 'directory') await walk(h, prefix + name + '/', out);
+    else if (name.endsWith('.md')) out.set(prefix + name, await (await h.getFile()).text());
+  }
+}
+
+const sameFiles = (a, b) => a.size === b.size && [...a].every(([k, v]) => b.get(k) === v);
+
+// Re-reads the brain and sets its status. Returns whether its status or notes changed.
+async function readBrain() {
+  const before = state.status;
+  let files = null;
+  const dirs = [];
+  try {
+    if ((await state.handle.queryPermission({ mode: 'read' })) !== 'granted') state.status = 'denied';
+    else {
+      await state.handle.getFileHandle('BRAIN.md');
+      files = new Map();
+      for (const top of ['repos', 'shared']) {
+        let dir;
+        try { dir = await state.handle.getDirectoryHandle(top); } catch { continue; }
+        if (top === 'repos') for await (const [name, h] of dir.entries()) if (h.kind === 'directory') dirs.push(name);
+        await walk(dir, top + '/', files);
+      }
+      state.status = 'ok';
+    }
+  } catch { state.status = 'missing'; }
+  if (!files) return state.status !== before;
+  dirs.sort();
+  if (state.brain && sameFiles(files, state.files) && dirs.join() === state.dirs.join()) return state.status !== before;
+  state.files = files;
+  state.dirs = dirs;
+  state.brain = parse();
+  return true;
+}
+
+async function openBrain() {
+  let handle;
+  try { handle = await window.showDirectoryPicker({ id: 'brain', mode: 'read' }); } catch { return; }
+  Object.assign(state, { handle, files: new Map(), dirs: [], brain: null, open: null });
+  pos.clear();
+  try { await idb('readwrite', (s) => s.put(handle, 'brain')); } catch {}
+  await readBrain();
+  render();
+}
+
+async function reconnect() {
+  try { await state.handle.requestPermission({ mode: 'read' }); } catch {}
+  await readBrain();
+  render();
+}
+
+// Re-reads the brain every few seconds while the tab is visible; renders only when a note changed.
+let polling = false;
+setInterval(async () => {
+  if (state.status !== 'ok' || polling || document.hidden) return;
+  polling = true;
+  try { if (await readBrain()) render(); } finally { polling = false; }
+}, 2500);
+
+// ---------- parsing ----------
+
+function parseNote(path, text) {
+  const parts = path.split('/');
+  if (parts[0] === 'repos' && parts.length < 3) return null;
+  const m = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(text);
+  const fm = {};
+  if (m) for (const line of m[1].split(/\r?\n/)) {
+    const kv = /^([\w-]+):\s*(.*)$/.exec(line);
+    if (kv) fm[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, '');
+  }
+  const body = m ? text.slice(m[0].length) : text;
+  const id = parts.at(-1).replace(/\.md$/, '');
+  const repos = parts[0] === 'repos' ? [parts[1]]
+    : (fm.repos || '').replace(/^\[|\]$/g, '').split(',').map((s) => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+  const links = [...new Set([...body.matchAll(WIKI)].map((x) => x[1].trim()))].filter((l) => l !== id);
+  return { id, path, description: fm.description || '', type: SHAPES[fm.type] && fm.type !== 'other' ? fm.type : 'other', repos, shared: parts[0] === 'shared', body, links };
+}
+
+// Notes resolve by file name, as Obsidian resolves [[links]]: the first file wins a name used twice, and the rest are reported.
+function parse() {
+  const notes = new Map(), dupes = [];
+  for (const [path, text] of state.files) {
+    const n = parseNote(path, text);
+    if (!n) continue;
+    if (notes.has(n.id)) dupes.push(path);
+    else notes.set(n.id, n);
+  }
+  const repos = new Set(state.dirs);
+  const ghosts = new Set(), backlinks = new Map();
+  for (const n of notes.values()) {
+    n.repos.forEach((r) => repos.add(r));
+    for (const l of n.links) {
+      if (!notes.has(l)) ghosts.add(l);
+      if (!backlinks.has(l)) backlinks.set(l, []);
+      backlinks.get(l).push(n.id);
+    }
+  }
+  return { notes, repos: [...repos].sort(), ghosts, backlinks, dupes };
+}
+
+// ---------- the visible subset ----------
+
+// The notes the filters keep: their types not hidden, and with a repository picked, its notes and their neighbours one link away.
+function shown() {
+  const { notes } = state.brain;
+  let keep = [...notes.values()].filter((n) => !state.hidden.has(n.type));
+  if (state.repo !== 'all') {
+    const own = new Set(keep.filter((n) => n.repos.includes(state.repo)).map((n) => n.id));
+    const near = new Set(own);
+    for (const n of keep) {
+      if (own.has(n.id)) n.links.forEach((l) => near.add(l));
+      else if (n.links.some((l) => own.has(l))) near.add(n.id);
+    }
+    keep = keep.filter((n) => near.has(n.id));
+  }
+  return keep;
+}
+
+function graphData() {
+  const { notes, repos } = state.brain;
+  const keep = shown();
+  const ids = new Set(keep.map((n) => n.id));
+  const count = new Map();
+  keep.forEach((n) => n.repos.forEach((r) => count.set(r, (count.get(r) || 0) + 1)));
+  const hubs = state.repo === 'all' ? repos : repos.filter((r) => r === state.repo || count.has(r));
+  const nodes = hubs.map((r) => ({ id: 'r:' + r, kind: 'repo', label: r, count: count.get(r) || 0 }));
+  const edges = [], ghosts = new Set();
+  for (const n of keep) {
+    nodes.push({ id: 'n:' + n.id, kind: 'note', note: n });
+    n.repos.forEach((r) => edges.push({ source: 'n:' + n.id, target: 'r:' + r, kind: 'member' }));
+    for (const l of n.links) {
+      if (ids.has(l)) edges.push({ source: 'n:' + n.id, target: 'n:' + l, kind: 'link' });
+      else if (!notes.has(l)) { ghosts.add(l); edges.push({ source: 'n:' + n.id, target: 'g:' + l, kind: 'link' }); }
+    }
+  }
+  ghosts.forEach((g) => nodes.push({ id: 'g:' + g, kind: 'ghost', label: g }));
+  return { nodes, edges };
+}
+
+// ---------- graph ----------
+
+const hubR = (d) => 9 + Math.sqrt(d.count) * 2.5;
+const pos = new Map();
+let svg, root, zoom, sim, nodeSel, linkSel;
+
+function drawGraph() {
+  const host = $('canvas');
+  if (!svg) {
+    const { width, height } = host.getBoundingClientRect();
+    svg = d3.select(host).append('svg').attr('id', 'graph').attr('class', 'h-full w-full');
+    root = svg.append('g');
+    zoom = d3.zoom().scaleExtent([0.15, 4]).on('zoom', (e) => {
+      root.attr('transform', e.transform);
+      svg.classed('far', e.transform.k < 0.7);
+    });
+    svg.call(zoom).on('dblclick.zoom', null).call(zoom.transform, d3.zoomIdentity.translate(width / 2, height / 2));
+    svg.on('click', (e) => { if (e.target === svg.node()) closeDoc(); });
+  }
+  if (sim) {
+    sim.stop();
+    sim.nodes().forEach((d) => pos.set(d.id, { x: d.x, y: d.y }));
+  }
+
+  const { nodes, edges } = graphData();
+  let fresh = 0;
+  for (const d of nodes) {
+    const p = pos.get(d.id);
+    if (p) Object.assign(d, p);
+    else fresh++;
+  }
+  const adj = new Map(nodes.map((d) => [d.id, new Set([d.id])]));
+  for (const e of edges) { adj.get(e.source)?.add(e.target); adj.get(e.target)?.add(e.source); }
+
+  root.selectAll('*').remove();
+  linkSel = root.append('g').selectAll('line').data(edges).join('line').attr('class', (e) => 'edge ' + e.kind);
+  nodeSel = root.append('g').selectAll('g').data(nodes).join('g').attr('class', (d) => 'node ' + d.kind);
+  nodeSel.append('circle').attr('r', (d) => (d.kind === 'repo' ? hubR(d) + 6 : 14)).attr('fill', 'transparent');
+  nodeSel.filter((d) => d.kind === 'repo').append('circle').attr('class', 'glyph').attr('r', hubR);
+  nodeSel.filter((d) => d.kind !== 'repo').append('path').attr('class', 'glyph').attr('d', (d) => glyph(d.kind === 'ghost' ? 'concept' : d.note.type));
+  nodeSel.append('text')
+    .attr('class', (d) => (d.kind === 'repo' ? '' : 'note-label'))
+    .attr('text-anchor', 'middle')
+    .attr('dy', (d) => (d.kind === 'repo' ? hubR(d) + 16 : 20))
+    .text((d) => (d.kind === 'note' ? d.note.id : d.label));
+
+  nodeSel
+    .on('mouseenter', (ev, d) => {
+      const near = adj.get(d.id);
+      root.classed('dim', true);
+      nodeSel.classed('hot', (n) => near.has(n.id));
+      linkSel.classed('hot', (e) => e.source.id === d.id || e.target.id === d.id);
+      showTip(ev, d);
+    })
+    .on('mousemove', moveTip)
+    .on('mouseleave', () => {
+      root.classed('dim', false);
+      nodeSel.classed('hot', false);
+      linkSel.classed('hot', false);
+      $('tip').classList.add('hidden');
+    })
+    .on('click', (ev, d) => {
+      ev.stopPropagation();
+      if (d.kind === 'repo') setRepo(state.repo === d.label ? 'all' : d.label);
+      else openDoc(d.kind === 'note' ? d.note.id : d.label);
+    })
+    .call(d3.drag()
+      .on('start', (ev, d) => { if (!ev.active) sim.alphaTarget(0.2).restart(); d.fx = d.x; d.fy = d.y; })
+      .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
+      .on('end', (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+  sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(edges).id((d) => d.id).distance((e) => (e.kind === 'member' ? 70 : 100)).strength((e) => (e.kind === 'member' ? 0.5 : 0.2)))
+    .force('charge', d3.forceManyBody().strength((d) => (d.kind === 'repo' ? -500 : -140)))
+    .force('collide', d3.forceCollide((d) => (d.kind === 'repo' ? hubR(d) + 14 : 18)))
+    .force('x', d3.forceX().strength(0.03))
+    .force('y', d3.forceY().strength(0.03))
+    .alpha(fresh ? 1 : 0.15)
+    .on('tick', () => {
+      linkSel.attr('x1', (e) => e.source.x).attr('y1', (e) => e.source.y).attr('x2', (e) => e.target.x).attr('y2', (e) => e.target.y);
+      nodeSel.attr('transform', (d) => `translate(${d.x},${d.y})`);
+    });
+  marks();
+}
+
+const matches = (d) => {
+  const q = state.query.trim().toLowerCase();
+  if (!q) return false;
+  const text = d.kind === 'note' ? `${d.note.id} ${d.note.description}` : d.label;
+  return text.toLowerCase().includes(q);
+};
+const nodeName = (d) => (d.kind === 'note' ? d.note.id : d.kind === 'ghost' ? d.label : null);
+
+// Rings the search matches and the open note.
+function marks() {
+  if (!nodeSel) return;
+  nodeSel.classed('match', matches).classed('selected', (d) => state.open !== null && nodeName(d) === state.open);
+}
+
+// Opens a note, or a link not written yet, and centres the graph on it.
+function focus(name) {
+  openDoc(name);
+  const d = sim?.nodes().find((n) => nodeName(n) === name);
+  if (d && state.view === 'graph') svg.transition().duration(500).call(zoom.translateTo, d.x, d.y);
+}
+
+function showTip(ev, d) {
+  const tip = $('tip');
+  if (d.kind === 'repo') tip.innerHTML = `<div class="font-semibold">${esc(d.label)}</div><div class="mt-0.5 text-zinc-500">${d.count} note${d.count === 1 ? '' : 's'}. Click to show only this repository.</div>`;
+  else if (d.kind === 'ghost') tip.innerHTML = `<div class="font-mono">${esc(d.label)}</div><div class="mt-0.5 text-zinc-500">Not written yet.</div>`;
+  else tip.innerHTML = `<div class="flex items-center gap-1.5 font-mono">${icon(d.note.type)}${esc(d.note.id)}</div><div class="mt-1 text-zinc-600 dark:text-zinc-300">${esc(d.note.description)}</div>`;
+  tip.classList.remove('hidden');
+  moveTip(ev);
+}
+
+function moveTip(ev) {
+  const tip = $('tip');
+  const x = Math.min(ev.clientX + 14, innerWidth - tip.offsetWidth - 8);
+  const y = Math.min(ev.clientY + 14, innerHeight - tip.offsetHeight - 8);
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}
+
+// ---------- list ----------
+
+function renderList() {
+  const rows = shown().sort((a, b) => a.repos.join().localeCompare(b.repos.join()) || a.id.localeCompare(b.id));
+  const q = state.query.trim().toLowerCase();
+  const hit = (n) => q && `${n.id} ${n.description}`.toLowerCase().includes(q);
+  $('list').innerHTML = !rows.length ? `<p class="py-16 text-center text-sm text-zinc-500">No notes match these filters.</p>` : `
+    <table class="mx-auto w-full max-w-6xl text-sm">
+      <thead class="text-left font-mono text-xs uppercase tracking-widest text-zinc-500">
+        <tr><th class="py-2 pr-4">Note</th><th class="py-2 pr-4">Type</th><th class="py-2 pr-4">Repositories</th><th class="py-2 pr-4">Description</th><th class="py-2">Links</th></tr>
+      </thead>
+      <tbody>${rows.map((n) => `
+        <tr data-link="${esc(n.id)}" class="cursor-pointer border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 ${hit(n) ? 'bg-emerald-50 dark:bg-emerald-950/30' : ''}">
+          <td class="py-2 pr-4 font-mono">${esc(n.id)}</td>
+          <td class="py-2 pr-4"><span class="inline-flex items-center gap-1.5">${icon(n.type)}${esc(n.type)}</span></td>
+          <td class="py-2 pr-4">${n.repos.map((r) => `<span class="mr-1 rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 font-mono text-xs">${esc(r)}</span>`).join('')}</td>
+          <td class="py-2 pr-4 text-zinc-600 dark:text-zinc-300">${esc(n.description)}</td>
+          <td class="py-2 tabular-nums text-zinc-500">${n.links.length}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ---------- drawer ----------
+
+function openDoc(name) {
+  state.open = name;
+  renderDoc();
+  $('drawer').classList.add('open');
+  marks();
+}
+
+function closeDoc() {
+  state.open = null;
+  $('drawer').classList.remove('open');
+  marks();
+}
+
+const chip = (text) => `<span class="rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 font-mono">${esc(text)}</span>`;
+const linkList = (label, names) => !names.length ? '' : `
+  <div class="not-prose mt-8 border-t border-zinc-200 dark:border-zinc-800 pt-4">
+    <div class="mb-2 font-mono text-xs uppercase tracking-widest text-zinc-500">${label}</div>
+    <div class="flex flex-wrap gap-1.5">${names.map((l) => `<button data-link="${esc(l)}" class="rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 font-mono text-xs hover:border-emerald-500 ${state.brain.notes.has(l) ? '' : 'border-dashed text-zinc-500'}">${esc(l)}</button>`).join('')}</div>
+  </div>`;
+
+function renderDoc() {
+  const b = state.brain;
+  const n = b?.notes.get(state.open);
+  if (!n && !b?.ghosts.has(state.open)) return closeDoc();
+  const from = b.backlinks.get(state.open) || [];
+  if (!n) {
+    $('docHead').innerHTML = `<div class="font-mono text-xs uppercase tracking-widest text-zinc-500">Not written yet</div><h2 class="mt-1 text-xl font-semibold tracking-tight font-mono">${esc(state.open)}</h2>`;
+    $('doc').innerHTML = `<p>Notes link to <code>[[${esc(state.open)}]]</code>, but no file in the brain is named <code>${esc(state.open)}.md</code>. It marks a note worth writing.</p>${linkList('Linked from', from)}`;
+    $('docPath').textContent = '';
+    $('copyPath').classList.add('hidden');
+    return;
+  }
+  $('docHead').innerHTML = `
+    <div class="flex flex-wrap items-center gap-1.5 text-xs"><span class="inline-flex items-center gap-1.5 rounded bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5">${icon(n.type)}${esc(n.type)}</span>${n.repos.map(chip).join('')}</div>
+    <h2 class="mt-2 text-xl font-semibold tracking-tight font-mono">${esc(n.id)}</h2>
+    <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">${esc(n.description)}</p>`;
+  const body = n.body.replace(WIKI, (_, t, alias) => {
+    const target = t.trim();
+    return `<a href="#" data-link="${esc(target)}" class="wikilink${b.notes.has(target) ? '' : ' ghost'}">${esc((alias || t).trim())}</a>`;
+  });
+  $('doc').innerHTML = marked.parse(body) + linkList('Links to', n.links) + linkList('Linked from', from);
+  $('docPath').textContent = n.path;
+  $('copyPath').classList.remove('hidden');
+}
+
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('#doc [data-link], #list [data-link]');
+  if (!a) return;
+  e.preventDefault();
+  focus(a.dataset.link);
+});
+$('close').onclick = closeDoc;
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDoc(); });
+$('copyPath').onclick = () => navigator.clipboard?.writeText(state.open ? state.brain.notes.get(state.open)?.path || '' : '');
+
+// ---------- toolbar ----------
+
+function setRepo(r) {
+  state.repo = r;
+  store.set('repo', r);
+  render();
+}
+
+function renderToolbar() {
+  const b = state.brain;
+  if (state.repo !== 'all' && !b.repos.includes(state.repo)) state.repo = 'all';
+  $('repo').innerHTML = `<option value="all">All repositories</option>` + b.repos.map((r) => `<option value="${esc(r)}" ${r === state.repo ? 'selected' : ''}>${esc(r)}</option>`).join('');
+  const counts = {};
+  for (const n of b.notes.values()) counts[n.type] = (counts[n.type] || 0) + 1;
+  const types = Object.keys(SHAPES).filter((t) => t !== 'other' || counts.other);
+  $('types').innerHTML = types.map((t) => {
+    const off = state.hidden.has(t);
+    return `<button data-type="${t}" aria-pressed="${!off}" title="${off ? 'Show' : 'Hide'} ${t} notes" class="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 px-2 py-1 text-xs ${off ? 'opacity-40 line-through' : ''}">${icon(t)}${t}<span class="tabular-nums text-zinc-500">${counts[t] || 0}</span></button>`;
+  }).join('');
+  const links = [...b.notes.values()].reduce((s, n) => s + n.links.length, 0);
+  $('stats').textContent = `${b.notes.size} notes · ${b.repos.length} repos · ${links} links · ${b.ghosts.size} unwritten`;
+  $('warn').classList.toggle('hidden', !b.dupes.length);
+  $('warn').innerHTML = !b.dupes.length ? '' : `Each name must be unique across the brain, so <code>[[links]]</code> resolve to only the first file named so. Rename: ${b.dupes.map((p) => `<code class="font-mono">${esc(p)}</code>`).join(', ')}`;
+}
+
+$('types').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-type]')?.dataset.type;
+  if (!t) return;
+  state.hidden.has(t) ? state.hidden.delete(t) : state.hidden.add(t);
+  store.set('hidden', JSON.stringify([...state.hidden]));
+  render();
+});
+$('repo').onchange = (e) => setRepo(e.target.value);
+$('q').oninput = (e) => {
+  state.query = e.target.value;
+  if (state.view === 'list') renderList();
+  else marks();
+};
+$('q').onkeydown = (e) => {
+  if (e.key !== 'Enter') return;
+  const d = sim?.nodes().find((n) => n.kind !== 'repo' && matches(n));
+  if (d) focus(nodeName(d));
+};
+document.querySelectorAll('#views [data-view]').forEach((btn) => btn.onclick = () => {
+  state.view = btn.dataset.view;
+  store.set('view', state.view);
+  render();
+});
+$('open').onclick = openBrain;
+
+// ---------- page ----------
+
+function renderEmpty() {
+  const name = esc(state.handle?.name);
+  const button = (id, label) => `<button id="${id}" class="rounded-md bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-4 py-2 text-sm hover:opacity-90">${label}</button>`;
+  const body = {
+    unsupported: `<p class="text-sm text-zinc-500">This page needs Chrome or Edge: it reads the brain through folder access.</p>`,
+    none: `<p class="text-sm text-zinc-500">Every note in the brain as a node, every <code>[[link]]</code> as an edge, clustered by repository. Pick the brain's folder, the one holding <code>BRAIN.md</code>. Nothing leaves your machine.</p>${button('pick', 'Open brain')}`,
+    denied: `<p class="text-sm text-zinc-500">The browser needs permission again to read <b>${name}</b>.</p>${button('again', 'Reconnect')}`,
+    missing: `<p class="text-sm text-zinc-500">No <code>BRAIN.md</code> in <b>${name}</b>. Pick the brain's root folder; <code>/brain setup</code> creates one.</p>${button('pick', 'Open brain')}`,
+  }[state.status];
+  $('empty').innerHTML = `<div class="mx-auto max-w-md py-24 text-center space-y-4"><h1 class="text-xl font-semibold tracking-tight">Second brain</h1>${body}</div>`;
+  $('pick')?.addEventListener('click', openBrain);
+  $('again')?.addEventListener('click', reconnect);
+}
+
+function render() {
+  const ok = state.status === 'ok';
+  $('crumb').innerHTML = state.handle ? `<span class="text-zinc-300 dark:text-zinc-700">/</span> ${esc(state.handle.name)}` : '';
+  $('views').classList.toggle('hidden', !ok);
+  $('live').classList.toggle('hidden', !ok);
+  $('live').classList.toggle('flex', ok);
+  $('open').classList.toggle('hidden', state.status === 'unsupported');
+  $('open').textContent = state.handle ? 'Change brain' : 'Open brain';
+  $('toolbar').classList.toggle('hidden', !ok);
+  $('empty').classList.toggle('hidden', ok);
+  document.querySelectorAll('#views [data-view]').forEach((btn) => btn.className = 'px-3 py-1 rounded ' + (btn.dataset.view === state.view ? 'bg-zinc-100 dark:bg-zinc-800 font-medium' : 'text-zinc-500'));
+  if (!ok) {
+    $('canvas').classList.add('hidden');
+    $('list').classList.add('hidden');
+    $('warn').classList.add('hidden');
+    closeDoc();
+    return renderEmpty();
+  }
+  renderToolbar();
+  $('canvas').classList.toggle('hidden', state.view !== 'graph');
+  $('list').classList.toggle('hidden', state.view !== 'list');
+  if (state.view === 'graph') drawGraph();
+  else renderList();
+  if (state.open) renderDoc();
+}
+
+async function restore() {
+  if (!window.showDirectoryPicker) {
+    state.status = 'unsupported';
+    return render();
+  }
+  try { state.handle = (await idb('readonly', (s) => s.get('brain'))) || null; } catch {}
+  if (state.handle) await readBrain();
+  render();
+}
+
+restore();
+</script>
+</body>
+</html>

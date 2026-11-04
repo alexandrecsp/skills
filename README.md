@@ -135,6 +135,28 @@ Once every milestone is in, the spec lands: `/build` rebases the spec's branch o
 
 Every pipeline branch starts with `sdd/`, so `git branch --list 'sdd/*'` finds them all, and `git branch --list 'sdd/<spec-folder>/*'` finds one spec's. After landing, `/build` offers to delete the spec's branches.
 
+## Second brain
+
+The second brain holds the team's knowledge about many repositories in a git repository of its own. It keeps what the code can't tell you by looking: the reasons behind decisions, traps, and the contracts between repositories. Each teammate clones it locally, and pull and push keep the clones in step.
+
+```
+<brain>/
+├── BRAIN.md                    ← how to join, the repositories it covers
+├── repos/<repo-slug>/<name>.md ← notes on one repository
+└── shared/<name>.md            ← notes spanning several (contracts, team conventions)
+```
+
+Each note holds one fact: frontmatter with `name`, a one-line `description` and a `type` (`concept`, `decision`, `gotcha`, `contract`, `how-to`), then the fact, linked to related notes with `[[name]]`. Obsidian can open the folder as a vault. `skills/brain/FORMAT.md` defines the format.
+
+Everything runs through one skill, `/brain`, and its first argument picks what it does:
+
+- `/brain setup` clones the team's brain or creates one, records its local path in `~/.alper/brain.json`, and registers the current repository. It can also add a **Second brain** section to the repo's `AGENTS.md` or `CLAUDE.md`. Run it once in each repository.
+- `/brain recall` and `/brain remember <fact>` also run on their own. The agent recalls the notes before work in a registered repository, and when it learns something worth keeping, it proposes a note and commits it once you confirm.
+- `/brain sync` pulls with rebase, then pushes. Nothing is pushed until you run it.
+- `/brain graph` opens a page that draws every note as a node and every link as an edge, clustered around repository hubs. A node's shape shows its type, a dashed node is a link to a note nobody has written yet, and clicking a node opens its note. You can search, filter by repository or type, or switch to a list view. Like the dashboard, it opens from the plugin's folder and needs Chrome or Edge.
+
+In a registered repository, the pipeline uses the brain too. Every skill that reads the glossary and ADRs also reads the brain's notes, through `skills/brain/RECALL.md`, and `brainstorm` reads them before its first round. A `contract` note records which other repositories consume an interface. A change to that interface becomes a question in `brainstorm`, a confirmed item in `to-spec` and an **escalate** flag in `review-changes`, and `pr` calls it a one-way door with those repositories in its blast radius. The spec's **Brain notes** line lists the notes it relies on, so builders read them too. Knowledge flows back as proposals you pick from. `diagnose` offers the root cause as a gotcha, and landing a spec offers the tickets' gotchas and the arbiter's reasons, which would otherwise be lost with `.sdd/`. `onboard` offers the undocumented dependencies on other repositories as contracts, and `research` offers its verified answer. In a repository that is not registered, the pipeline works exactly as before.
+
 ## Skills used along the way
 
 | Skill | Role |
@@ -149,6 +171,7 @@ Every pipeline branch starts with `sdd/`, so `git branch --list 'sdd/*'` finds t
 | `codebase-design` | Vocabulary for deep modules: module, interface, seam, adapter, depth. |
 | `writing-for-agents` | How to write skills, `CLAUDE.md` and `AGENTS.md`. Used when editing this repo. |
 | `diagnose` | Diagnoses a hard bug or performance regression. It first builds a tight loop that goes red on the bug, then minimises the repro, ranks falsifiable hypotheses, and instruments one variable at a time. It fixes with a regression test at a correct seam, or records that no such seam exists. |
+| `brain` | The second brain, behind one command: `setup`, `graph`, `sync`, `recall` and `remember`. On its own, it reads a repository's notes before work and proposes a note when it learns something the repository doesn't record. It syncs only when you ask. |
 | `research` | Researches a question against primary sources in a background sub-agent. Saves the cited findings to `.sdd/research/<slug>.md`. |
 | `prototype` | Builds a throwaway prototype that answers one design question: a shareable HTML demo for logic, or switchable variants for UI, each drafted in parallel by its own designer sub-agent. Keeps it on a `prototype/<slug>` branch and records the verdict. |
 | `dashboard` | Opens the spec dashboard: one page in Chrome or Edge listing every repo you add to it, with needs-attention repos first. Each repo opens into its specs, milestones, tickets and reviews, with their diagrams drawn, live while you view it. Nothing is installed: the page opens from the plugin's folder. |

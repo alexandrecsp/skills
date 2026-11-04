@@ -20,4 +20,4 @@ Research runs in a **background sub-agent**, so the conversation keeps moving wh
 
    Done when the sub-agent is running; go back to the conversation.
 
-4. **Hand over.** When the sub-agent reports, give the user the path and the short answer, and flag every **unverified** claim and open question. Done when the user has them.
+4. **Hand over.** When the sub-agent reports, give the user the path and the short answer, and flag every **unverified** claim and open question. When the repo is registered in a second brain ([FORMAT.md](../brain/FORMAT.md)) and the answer bears on how this repository works, invoke the `brain` skill to record its verified part as a `concept`, citing its primary sources: the research file stays on this machine. Done when the user has them, and has confirmed or declined the note.

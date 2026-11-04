@@ -37,6 +37,10 @@ Write every round in the format of [ROUND-FORMAT.md](ROUND-FORMAT.md).
 
 Finding _facts_ is your job; the user only ever answers _decisions_. When a frontier question needs a fact from the environment (codebase, docs, tools), dispatch an `alper-skills:scout` agent to find it. Keep the round moving: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now.
 
+### Second brain
+
+When the repo is registered in a second brain, follow [RECALL.md](../brain/RECALL.md) alongside `What · Round 1`: its notes are facts, so you look them up rather than ask. Each changed contract enters the round as a frontier question: do its other repositories change with it, or does the interface stay compatible?
+
 ### In-flight specs
 
 When the repo has `.sdd/specs/`, other specs may be planned or mid-build in the modules this design touches. Follow [IN-FLIGHT.md](../to-spec/IN-FLIGHT.md) alongside `What · Round 1`, and again when the `How` opens, since the `How` names new modules. Each conflict with an in-flight spec enters the next round as a frontier question.
